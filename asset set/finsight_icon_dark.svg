@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#0F172A"/>
+
+  <defs>
+    <linearGradient id="blue" x1="0" y1="512" x2="512" y2="0">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Abstract F -->
+  <path d="M140 170 L360 170 L330 230 L210 230 L210 270 L320 270 L290 330 L210 330 L210 390 L140 430 Z"
+        fill="url(#blue)"/>
+
+  <!-- Chart line -->
+  <polyline points="120,160 180,130 240,170 320,120 380,80"
+            fill="none"
+            stroke="url(#blue)"
+            stroke-width="16"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+
+  <!-- Arrow -->
+  <polygon points="380,80 430,60 410,110"
+           fill="url(#blue)"/>
+
+  <!-- Nodes -->
+  <circle cx="120" cy="160" r="10" fill="url(#blue)"/>
+  <circle cx="180" cy="130" r="10" fill="url(#blue)"/>
+
+</svg>
