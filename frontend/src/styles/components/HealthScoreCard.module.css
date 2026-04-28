@@ -1,0 +1,100 @@
+/* ============================
+   HealthScoreCard Component
+   ============================ */
+
+.card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardLabel {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.scoreRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.score {
+  font-size: 3.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+  margin: 0;
+}
+
+.scoreDenom {
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+}
+
+/* Status badge */
+.badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.badgeSehat {
+  background-color: #f0fdf4;
+  color: #16a34a;
+}
+
+.badgeCukup {
+  background-color: #f0f9ff;
+  color: #0284c7;
+}
+
+.badgeKurang {
+  background-color: #fefce8;
+  color: #ca8a04;
+}
+
+.badgeTidak {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+/* Progress bar */
+.progressTrack {
+  width: 100%;
+  height: 0.625rem;
+  background-color: #f1f5f9;
+  border-radius: 9999px;
+  margin-top: 1.5rem;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 0.625rem;
+  border-radius: 9999px;
+  transition: width 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.barSehat  { background-color: #4ade80; }
+.barCukup  { background-color: #38bdf8; }
+.barKurang { background-color: #facc15; }
+.barTidak  { background-color: #f87171; }
+
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.375rem;
+}

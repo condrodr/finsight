@@ -113,6 +113,33 @@ code {
 @tailwind components;
 @tailwind utilities;
 
+/* Global resets — pastikan browser defaults tidak mengacaukan tampilan */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 :root {
   --primary: #0EA5E9;
   --primary-dark: #0284C7;

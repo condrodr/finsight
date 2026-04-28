@@ -1,114 +1,139 @@
-// import { useEffect } from "react";
-// import { getDashboard } from "../services/financeService";
-
-// const Dashboard = () => {
-
-//   const fetchDashboard = async () => {
-//     try {
-//       const res = await getDashboard(1);
-//       console.log(res.data);
-//     } catch (error) {
-//       console.error(error);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchDashboard();
-//   }, []);
-
-//   return <h1>Dashboard FinSight</h1>;
-// };
-
-// export default Dashboard;
+import { useState, useEffect } from "react";
+import { TrendingUp, TrendingDown, Wallet, CheckCircle2, AlertTriangle } from "lucide-react";
 import Sidebar from "../components/Sidebar.jsx";
 import StatCard from "../components/StatCard.jsx";
 import HealthScoreCard from "../components/HealthScoreCard.jsx";
+import { getDashboard } from "../services/financeService.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import styles from "../styles/pages/Dashboard.module.css";
+
+const formatRupiah = (angka) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(angka);
+
+function LoadingScreen() {
+  return (
+    <div className={styles.page}>
+      <Sidebar />
+      <main className={styles.centeredMain}>
+        <div className={styles.loadingBox}>
+          <div className={styles.spinner} />
+          <p className={styles.loadingText}>Memuat data keuangan...</p>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function ErrorScreen({ message }) {
+  return (
+    <div className={styles.page}>
+      <Sidebar />
+      <main className={styles.centeredMain}>
+        <div className={styles.errorBox}>
+          <div className={styles.errorIcon}>
+            <AlertTriangle size={24} className="text-red-500" />
+          </div>
+          <p className={styles.errorTitle}>Gagal memuat data</p>
+          <p className={styles.errorMsg}>{message}</p>
+          <p className={styles.errorHint}>Pastikan backend berjalan di localhost:5000</p>
+        </div>
+      </main>
+    </div>
+  );
+}
 
 function Dashboard() {
-  const dataDashboard = {
-    totalPendapatan: 10000000,
-    totalPengeluaran: 2825000,
-    saldoAkhir: 7175000,
-    skorKesehatan: 82,
-    insight: [
-      "Kondisi keuangan Anda berada dalam kategori sehat.",
-      "Pengeluaran masih lebih rendah dari pemasukan.",
-      "Tabungan dan investasi sudah cukup baik."
-    ],
-    warning: [
-      "Tetap batasi pengeluaran konsumtif agar cash flow tetap positif."
-    ]
-  };
+  const { user } = useAuth();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const formatRupiah = (angka) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR"
-    }).format(angka);
-  };
+  useEffect(() => {
+    getDashboard(user.id)
+      .then((res) => setData(res.data))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <LoadingScreen />;
+  if (error) return <ErrorScreen message={error} />;
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className={styles.page}>
       <Sidebar />
 
-      <main className="flex-1 p-8">
-        <div className="mb-8">
-          <p className="text-sky-500 font-semibold">Dashboard</p>
-          <h1 className="text-3xl font-bold text-slate-900">
-            Ringkasan Keuangan
-          </h1>
-          <p className="text-slate-500 mt-2">
-            Understand. Control. Grow.
-          </p>
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <p className={styles.label}>Dashboard</p>
+          <h1 className={styles.title}>Ringkasan Keuangan</h1>
+          <p className={styles.subtitle}>Understand. Control. Grow.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className={styles.statsGrid}>
           <StatCard
             title="Total Pendapatan"
-            value={formatRupiah(dataDashboard.totalPendapatan)}
+            value={formatRupiah(data.totalPendapatan)}
             description="Total pemasukan periode ini"
+            icon={<TrendingUp size={20} />}
+            accent="green"
           />
-
           <StatCard
             title="Total Pengeluaran"
-            value={formatRupiah(dataDashboard.totalPengeluaran)}
+            value={formatRupiah(data.totalPengeluaran)}
             description="Total pengeluaran periode ini"
+            icon={<TrendingDown size={20} />}
+            accent="red"
           />
-
           <StatCard
             title="Saldo Akhir"
-            value={formatRupiah(dataDashboard.saldoAkhir)}
+            value={formatRupiah(data.saldoAkhir)}
             description="Pendapatan dikurangi pengeluaran"
+            icon={<Wallet size={20} />}
+            accent={data.saldoAkhir >= 0 ? "sky" : "red"}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <HealthScoreCard score={dataDashboard.skorKesehatan} />
+        <div className={styles.bottomGrid}>
+          <HealthScoreCard score={data.skorKesehatan} />
 
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-900">
-              Insight Otomatis
-            </h2>
-
-            <div className="mt-4 space-y-3">
-              {dataDashboard.insight.map((item, index) => (
-                <div key={index} className="p-4 rounded-xl bg-sky-50 text-slate-700">
-                  {item}
+          <div className={styles.insightPanel}>
+            {data.insight.length > 0 && (
+              <div className={styles.insightBlock}>
+                <h2 className={styles.sectionTitle}>
+                  <CheckCircle2 size={18} className="text-sky-500" />
+                  Insight Otomatis
+                </h2>
+                <div className={styles.itemList}>
+                  {data.insight.map((item, i) => (
+                    <div key={i} className={styles.insightItem}>{item}</div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
-            <h2 className="text-xl font-bold text-slate-900 mt-8">
-              Peringatan
-            </h2>
-
-            <div className="mt-4 space-y-3">
-              {dataDashboard.warning.map((item, index) => (
-                <div key={index} className="p-4 rounded-xl bg-yellow-50 text-slate-700">
-                  {item}
+            {data.warning.length > 0 && (
+              <div>
+                <h2 className={styles.sectionTitle}>
+                  <AlertTriangle size={18} className="text-yellow-500" />
+                  Peringatan
+                </h2>
+                <div className={styles.itemList}>
+                  {data.warning.map((item, i) => (
+                    <div key={i} className={styles.warningItem}>{item}</div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {data.insight.length === 0 && data.warning.length === 0 && (
+              <p className={styles.emptyText}>
+                Belum ada insight. Tambahkan transaksi untuk memulai analisis.
+              </p>
+            )}
           </div>
         </div>
       </main>

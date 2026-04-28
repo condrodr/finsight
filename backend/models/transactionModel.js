@@ -2,8 +2,8 @@ import db from "../config/db.js";
 
 export const createTransaction = async (data) => {
   const query = `
-    INSERT INTO transactions 
-    (user_id, type, amount, category, subcategory, date, note)
+    INSERT INTO transactions
+    (user_id, type, amount, category, subcategory, date, description)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
@@ -12,9 +12,9 @@ export const createTransaction = async (data) => {
     data.type,
     data.amount,
     data.category,
-    data.subcategory,
+    data.subcategory || null,
     data.date,
-    data.note
+    data.note || null,
   ];
 
   const [result] = await db.execute(query, values);

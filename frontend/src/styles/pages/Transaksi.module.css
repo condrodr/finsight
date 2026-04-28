@@ -1,0 +1,345 @@
+/* ============================
+   Transaksi Page
+   ============================ */
+
+/* Layout */
+.page {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* Top Bar */
+.topBar {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0ea5e9;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.25rem 0 0;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0.25rem 0 0;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #0ea5e9;
+  color: #ffffff;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 150ms;
+}
+
+.addBtn:hover {
+  background-color: #0284c7;
+}
+
+/* Form Panel */
+.formPanel {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  margin-bottom: 1.5rem;
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.formTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 0.25rem;
+  transition: color 150ms;
+}
+
+.closeBtn:hover {
+  color: #475569;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .formGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.fullCol {
+  grid-column: 1 / -1;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  color: #0f172a;
+  background-color: #ffffff;
+  font-size: 0.875rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: box-shadow 150ms, border-color 150ms;
+}
+
+.input:focus {
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 3px rgb(14 165 233 / 0.15);
+}
+
+.formActions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}
+
+.cancelBtn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  background-color: #ffffff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+
+.cancelBtn:hover {
+  background-color: #f8fafc;
+}
+
+.saveBtn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  background-color: #0ea5e9;
+  color: #ffffff;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+
+.saveBtn:hover {
+  background-color: #0284c7;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Table Panel */
+.tablePanel {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  overflow: hidden;
+}
+
+/* Loading */
+.loadingBox {
+  padding: 2.5rem;
+  text-align: center;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 4px solid #e0f2fe;
+  border-top-color: #0ea5e9;
+  border-radius: 9999px;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingText {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+}
+
+/* Empty State */
+.emptyBox {
+  padding: 3.5rem;
+  text-align: center;
+}
+
+.emptyTitle {
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+}
+
+.emptySubtitle {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead tr {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.th {
+  text-align: left;
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.thRight {
+  text-align: right;
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tr:hover {
+  background-color: #f8fafc;
+}
+
+.tdDate {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.tdCategory {
+  padding: 1rem 1.5rem;
+}
+
+.categoryCell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.categoryName {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.subcategoryName {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.125rem;
+}
+
+.iconIncome {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.iconExpense {
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+.optionalTag {
+  font-weight: 400;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.tdNote {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.tdAmount {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.amountIncome {
+  color: #16a34a;
+}
+
+.amountExpense {
+  color: #f87171;
+}

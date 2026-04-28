@@ -1,0 +1,79 @@
+/* ============================
+   Laporan Page
+   ============================ */
+
+.page {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0ea5e9;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.25rem 0 0;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0.25rem 0 0;
+}
+
+/* Placeholder */
+.placeholder {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 3.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.iconWrap {
+  width: 3.5rem;
+  height: 3.5rem;
+  background-color: #f0f9ff;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.placeholderTitle {
+  color: #334155;
+  font-weight: 600;
+  margin: 0;
+}
+
+.placeholderDesc {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0;
+  max-width: 20rem;
+  line-height: 1.625;
+}

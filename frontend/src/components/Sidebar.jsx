@@ -1,39 +1,69 @@
-import { LayoutDashboard, ReceiptText, BarChart3, Lightbulb } from "lucide-react";
+import { LayoutDashboard, ReceiptText, BarChart3, Lightbulb, LogOut, User } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import logoIcon from "../assets/finsight_icon_only.png";
+import { useAuth } from "../context/AuthContext.jsx";
+import styles from "../styles/components/Sidebar.module.css";
+
+const navItems = [
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/transaksi", icon: ReceiptText, label: "Transaksi" },
+  { to: "/laporan", icon: BarChart3, label: "Laporan" },
+  { to: "/insight", icon: Lightbulb, label: "Insight" },
+];
 
 function Sidebar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logoutUser } = useAuth();
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate("/login");
+  };
+
   return (
-    <aside className="w-64 min-h-screen bg-slate-900 text-white p-6">
-      <div className="mb-10">
-        <div className="w-12 h-12 rounded-2xl bg-sky-400 flex items-center justify-center text-slate-900 font-bold text-xl">
-          F
+    <aside className={styles.aside}>
+      <div className={styles.brand}>
+        <div className={styles.brandRow}>
+          <img src={logoIcon} alt="FinSight" className={styles.logo} />
+          <h1 className={styles.brandName}>FinSight</h1>
         </div>
-        <h1 className="text-2xl font-bold mt-4">FinSight</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Know Your Habits. Master Your Money.
-        </p>
+        <p className={styles.tagline}>Know Your Habits. Master Your Money.</p>
       </div>
 
-      <nav className="space-y-3">
-        <a className="flex items-center gap-3 bg-sky-500 text-white px-4 py-3 rounded-xl">
-          <LayoutDashboard size={20} />
-          Dashboard
-        </a>
-
-        <a className="flex items-center gap-3 text-slate-300 hover:bg-slate-800 px-4 py-3 rounded-xl">
-          <ReceiptText size={20} />
-          Transaksi
-        </a>
-
-        <a className="flex items-center gap-3 text-slate-300 hover:bg-slate-800 px-4 py-3 rounded-xl">
-          <BarChart3 size={20} />
-          Laporan
-        </a>
-
-        <a className="flex items-center gap-3 text-slate-300 hover:bg-slate-800 px-4 py-3 rounded-xl">
-          <Lightbulb size={20} />
-          Insight
-        </a>
+      <nav className={styles.nav}>
+        {navItems.map(({ to, icon: Icon, label }) => {
+          const isActive = location.pathname === to;
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={`${styles.navLink} ${isActive ? styles.active : styles.inactive}`}
+            >
+              <Icon size={20} />
+              {label}
+            </Link>
+          );
+        })}
       </nav>
+
+      <div className={styles.footer}>
+        {user && (
+          <div className={styles.userInfo}>
+            <div className={styles.userAvatar}>
+              <User size={16} />
+            </div>
+            <div className={styles.userDetails}>
+              <p className={styles.userName}>{user.name}</p>
+              <p className={styles.userEmail}>{user.email}</p>
+            </div>
+          </div>
+        )}
+        <button onClick={handleLogout} className={styles.logoutBtn}>
+          <LogOut size={16} />
+          Keluar
+        </button>
+      </div>
     </aside>
   );
 }
