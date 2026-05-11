@@ -1,0 +1,384 @@
+FINSIGHT SYSTEM GUIDANCE
+Financial Health Evaluation & Consumptive Behavior Analysis
+
+========================================================
+1. SYSTEM OVERVIEW
+========================================================
+
+FinSight adalah sistem keuangan pribadi berbasis web yang bertujuan untuk:
+- mencatat transaksi keuangan pengguna
+- mengevaluasi kesehatan finansial
+- menganalisis perilaku konsumtif
+- memberikan insight otomatis
+- memberikan warning dan rekomendasi finansial
+
+Metode evaluasi menggunakan:
+COMPOSITE INDEX + MULTI INDICATOR SCORING + EQUAL WEIGHTING
+
+Pendekatan ini mengacu pada:
+- OECD Composite Indicator Framework
+- Financial Well-being Framework
+- Behavioral Finance Theory
+- Consumer Behavior Theory
+
+========================================================
+2. FINANCIAL HEALTH FRAMEWORK
+========================================================
+
+Financial Health Score (FHS) dibangun dari 3 dimensi utama:
+
+1. Objective Indicators (O)
+   → kondisi finansial nyata
+
+2. Behavioral Indicators (B)
+   → perilaku pengeluaran dan konsumsi
+
+3. Subjective Indicators (S)
+   → persepsi dan rasa aman finansial pengguna
+
+Seluruh indikator dinilai menggunakan:
+- ordinal scoring
+- normalisasi 0–100
+- equal weighting
+
+========================================================
+3. OBJECTIVE INDICATORS
+========================================================
+
+Objective indicators berasal dari data transaksi pengguna.
+
+--------------------------------------------------------
+3.1 Saving Ratio
+--------------------------------------------------------
+
+Formula:
+Saving Ratio = Total Savings / Total Income
+
+Tujuan:
+Mengukur kemampuan pengguna menyisihkan pendapatan.
+
+Interpretasi:
+- semakin tinggi semakin baik
+- menunjukkan financial sustainability
+
+--------------------------------------------------------
+3.2 Expense Ratio
+--------------------------------------------------------
+
+Formula:
+Expense Ratio = Total Expense / Total Income
+
+Tujuan:
+Mengukur kontrol pengeluaran.
+
+Interpretasi:
+- semakin rendah semakin baik
+- expense terlalu tinggi menunjukkan risiko finansial
+
+--------------------------------------------------------
+3.3 Cash Flow
+--------------------------------------------------------
+
+Formula:
+Cash Flow = Total Income - Total Expense
+
+Tujuan:
+Mengukur kestabilan arus kas.
+
+Interpretasi:
+- positif = sehat
+- negatif = defisit
+
+--------------------------------------------------------
+3.4 Debt Ratio
+--------------------------------------------------------
+
+Formula:
+Debt Ratio = Total Debt / Total Income
+
+Tujuan:
+Mengukur tekanan utang terhadap pendapatan.
+
+Interpretasi:
+- semakin rendah semakin baik
+
+========================================================
+4. BEHAVIORAL INDICATORS
+========================================================
+
+Behavioral indicators digunakan untuk menganalisis perilaku konsumtif pengguna.
+
+--------------------------------------------------------
+4.1 Consumptive Ratio
+--------------------------------------------------------
+
+Formula:
+Consumptive Ratio = Consumptive Expense / Total Expense
+
+Kategori konsumtif:
+- hiburan
+- shopping
+- food delivery
+- gadget
+- lifestyle spending
+- non-essential spending
+
+Interpretasi:
+- semakin tinggi semakin konsumtif
+
+--------------------------------------------------------
+4.2 Transaction Frequency
+--------------------------------------------------------
+
+Tujuan:
+Mengukur intensitas transaksi.
+
+Interpretasi:
+- transaksi kecil berulang menunjukkan impulsive spending
+
+--------------------------------------------------------
+4.3 Impulsive Spending Pattern
+--------------------------------------------------------
+
+Deteksi:
+- transaksi kecil namun sering
+- transaksi mendadak
+- dominasi kategori hiburan
+- dominasi non-essential spending
+
+Indikasi:
+- impulsive buying behavior
+
+--------------------------------------------------------
+4.4 Budget Discipline
+--------------------------------------------------------
+
+Tujuan:
+Mengukur kemampuan pengguna menjaga pengeluaran tetap sesuai batas.
+
+Interpretasi:
+- pengeluaran stabil = disiplin baik
+- pengeluaran melebihi pemasukan = disiplin buruk
+
+========================================================
+5. SUBJECTIVE INDICATORS
+========================================================
+
+Subjective indicators diperoleh dari self-assessment bulanan pengguna.
+
+Menggunakan skala Likert 1–5.
+
+--------------------------------------------------------
+5.1 Financial Satisfaction
+--------------------------------------------------------
+
+Pertanyaan contoh:
+"Saya puas dengan kondisi keuangan saya saat ini."
+
+--------------------------------------------------------
+5.2 Financial Security
+--------------------------------------------------------
+
+Pertanyaan contoh:
+"Saya merasa aman secara finansial."
+
+--------------------------------------------------------
+5.3 Financial Confidence
+--------------------------------------------------------
+
+Pertanyaan contoh:
+"Saya percaya diri dalam mengelola keuangan."
+
+========================================================
+6. ORDINAL SCORING METHOD
+========================================================
+
+Semua indikator dikonversi menjadi skor ordinal.
+
+--------------------------------------------------------
+Scoring Scale
+--------------------------------------------------------
+
+5 = Sangat Baik
+4 = Baik
+3 = Cukup
+2 = Buruk
+1 = Sangat Buruk
+
+========================================================
+7. SCORE NORMALIZATION
+========================================================
+
+Final score dinormalisasi ke skala 0–100.
+
+Formula:
+
+Financial Health Score =
+(Total Indicator Score / Maximum Score) × 100
+
+========================================================
+8. EQUAL WEIGHTING METHOD
+========================================================
+
+Setiap indikator diberikan bobot yang sama.
+
+Alasan:
+- tidak terdapat standar baku bobot indikator
+- sesuai metode OECD composite index
+- lebih stabil secara akademik
+- lebih explainable untuk sistem evaluasi finansial
+
+========================================================
+9. FINAL HEALTH CATEGORY
+========================================================
+
+80 – 100
+Status: Sangat Sehat
+
+60 – 79
+Status: Sehat
+
+40 – 59
+Status: Cukup
+
+20 – 39
+Status: Berisiko
+
+0 – 19
+Status: Tidak Sehat
+
+========================================================
+10. INSIGHT GENERATION ENGINE
+========================================================
+
+Sistem harus menghasilkan insight otomatis berdasarkan pola data.
+
+--------------------------------------------------------
+Contoh Insight
+--------------------------------------------------------
+
+- Pengeluaran Anda lebih besar dibanding pemasukan.
+- Tabungan Anda masih rendah.
+- Pengeluaran konsumtif cukup tinggi.
+- Arus kas Anda negatif bulan ini.
+- Pengeluaran hiburan meningkat dibanding bulan lalu.
+- Anda sering melakukan transaksi kecil berulang.
+- Pengeluaran non-esensial mendominasi pengeluaran bulanan.
+
+========================================================
+11. WARNING SYSTEM
+========================================================
+
+Warning diberikan jika kondisi finansial berisiko.
+
+--------------------------------------------------------
+Trigger Warning
+--------------------------------------------------------
+
+Saving Ratio < 10%
+→ warning saving rendah
+
+Expense Ratio > 90%
+→ warning pengeluaran tinggi
+
+Cash Flow negatif
+→ warning defisit finansial
+
+Consumptive Ratio > 70%
+→ warning perilaku konsumtif tinggi
+
+Debt Ratio tinggi
+→ warning tekanan utang tinggi
+
+========================================================
+12. RECOMMENDATION ENGINE
+========================================================
+
+Sistem memberikan rekomendasi otomatis berdasarkan kondisi finansial.
+
+--------------------------------------------------------
+Contoh Recommendation
+--------------------------------------------------------
+
+- Kurangi pengeluaran hiburan.
+- Tingkatkan tabungan minimal 10% dari pendapatan.
+- Batasi transaksi impulsif.
+- Buat anggaran bulanan.
+- Prioritaskan kebutuhan dibanding keinginan.
+- Kurangi penggunaan kredit konsumtif.
+- Tingkatkan emergency fund.
+
+========================================================
+13. TREND ANALYSIS
+========================================================
+
+Sistem perlu melakukan analisis tren bulanan.
+
+--------------------------------------------------------
+Analisis yang disarankan
+--------------------------------------------------------
+
+- saving naik / turun
+- expense naik / turun
+- perubahan cash flow
+- perubahan perilaku konsumtif
+- perubahan kategori pengeluaran dominan
+
+--------------------------------------------------------
+Contoh Output
+--------------------------------------------------------
+
+- Pengeluaran meningkat 18% dibanding bulan lalu.
+- Tabungan meningkat 12% dibanding bulan sebelumnya.
+- Pengeluaran hiburan mengalami kenaikan signifikan.
+- Kondisi finansial membaik dibanding periode sebelumnya.
+
+========================================================
+14. IMPLEMENTATION FLOW
+========================================================
+
+INPUT:
+- income
+- expense
+- saving
+- debt
+- category
+- transaction frequency
+- subjective survey
+
+PROCESS:
+1. calculate financial ratios
+2. convert to ordinal score
+3. aggregate all indicators
+4. normalize score
+5. generate category
+6. generate insights
+7. generate warnings
+8. generate recommendations
+
+OUTPUT:
+- financial health score
+- health category
+- consumptive analysis
+- insights
+- warnings
+- recommendations
+
+========================================================
+15. SYSTEM PRINCIPLES
+========================================================
+
+FinSight harus:
+- explainable
+- transparent
+- behavior-oriented
+- easy to understand
+- practical for users
+- academically justifiable
+
+Sistem tidak hanya fokus pada angka,
+tetapi juga fokus pada perilaku finansial pengguna.
+
+========================================================
+END OF GUIDANCE
+========================================================

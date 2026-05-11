@@ -1,0 +1,980 @@
+================================================================================
+FINSIGHT — PANDUAN CEK QA / QC SISTEM
+Quality Assurance & Quality Control Checklist
+Tanggal Dokumen: Mei 2026
+================================================================================
+
+Dokumen ini adalah panduan teknis untuk memeriksa apakah sistem FinSight
+(frontend + backend + database) berjalan dengan benar secara end-to-end.
+Gunakan dokumen ini setiap kali ingin memastikan sistem dalam kondisi siap pakai.
+
+================================================================================
+BAGIAN 0 — PERSIAPAN SEBELUM CEK
+================================================================================
+
+Pastikan kondisi berikut sebelum mulai pengujian:
+
+  [ ] MySQL sudah berjalan (default port 3306)
+  [ ] Database "finsight" sudah ada dan sudah di-import dari finsight_scoring.sql
+  [ ] Backend berjalan di http://localhost:5000
+      Cara start: masuk folder backend → npm run dev (atau node server.js)
+  [ ] Frontend berjalan di http://localhost:5173
+      Cara start: masuk folder frontend → npm run dev
+  [ ] Browser sudah terbuka, buka Developer Tools (F12) → tab Network & Console
+  [ ] Siapkan akun test (atau buat baru saat pengujian)
+
+Konfigurasi backend yang harus dicek di file backend/.env:
+  PORT=5000
+  DB_HOST=localhost
+  DB_USER=root
+  DB_PASSWORD=root
+  DB_NAME=finsight
+  JWT_SECRET=finsight_secret_key
+
+================================================================================
+BAGIAN 1 — CEK KONEKSI DASAR
+================================================================================
+
+1.1 CEK API BACKEND AKTIF
+--------------------------
+Buka browser atau Postman, akses:
+  GET http://localhost:5000/api/health
+
+Hasil yang BENAR:
+  {
+    "status": "success",
+    "message": "API FinSight aktif dan berjalan"
+  }
+  HTTP Status: 200 OK
+
+Jika gagal:
+  → Pastikan backend sudah start
+  → Cek apakah port 5000 tidak dipakai aplikasi lain
+  → Lihat log error di terminal backend
+
+----------------------------------------------------------------------
+
+1.2 CEK KONEKSI DATABASE
+--------------------------
+Indikator koneksi DB berhasil adalah: backend tidak error saat start.
+
+Jika backend error "ER_ACCESS_DENIED_ERROR":
+  → Cek username/password di .env
+  → Pastikan MySQL user memiliki akses ke database finsight
+
+Jika backend error "ER_NO_SUCH_TABLE":
+  → Jalankan ulang import dari finsight_scoring.sql di MySQL client
+
+----------------------------------------------------------------------
+
+1.3 CEK FRONTEND BISA AKSES BACKEND
+-------------------------------------
+Buka browser, akses http://localhost:5173
+Buka DevTools → tab Network
+
+Navigasi ke halaman Login.
+Perhatikan apakah ada request ke http://localhost:5000/api/...
+
+Jika ada error CORS:
+  → Pastikan di backend/app.js terdapat konfigurasi cors()
+  → Pastikan allowed origin sudah mencakup http://localhost:5173
+
+
+================================================================================
+BAGIAN 2 — CEK AUTENTIKASI (AUTH)
+================================================================================
+
+2.1 REGISTER AKUN BARU
+------------------------
+Langkah:
+  1. Buka http://localhost:5173/register
+  2. Isi Nama, Email (gunakan email baru yang belum terdaftar), Password
+  3. Klik tombol Register / Daftar
+
+Hasil yang BENAR:
+  [ ] Tidak ada error merah di halaman
+  [ ] Muncul pesan sukses atau redirect ke halaman Login
+  [ ] Di database, tabel users bertambah 1 baris baru
+  [ ] Password tersimpan dalam bentuk bcrypt hash (bukan plaintext)
+
+Cek di MySQL:
+  SELECT id, name, email, LEFT(password, 10) FROM users ORDER BY id DESC LIMIT 1;
+  → Kolom password harus dimulai dengan "$2b$" (format bcrypt)
+
+----------------------------------------------------------------------
+
+2.2 REGISTER EMAIL DUPLIKAT (HARUS DITOLAK)
+--------------------------------------------
+Langkah:
+  1. Coba register lagi dengan email yang sama
+  2. Klik Register
+
+Hasil yang BENAR:
+  [ ] Muncul pesan error "Email sudah terdaftar."
+  [ ] HTTP Status: 409 Conflict
+  [ ] Data baru TIDAK masuk ke database
+
+----------------------------------------------------------------------
+
+2.3 REGISTER FIELD KOSONG (VALIDASI)
+--------------------------------------
+Langkah:
+  1. Klik Register tanpa mengisi field apapun
+
+Hasil yang BENAR:
+  [ ] Sistem menolak (frontend validation atau backend error 400)
+  [ ] Pesan: "Semua field wajib diisi."
+
+----------------------------------------------------------------------
+
+2.4 LOGIN VALID
+----------------
+Langkah:
+  1. Buka http://localhost:5173/login
+  2. Masukkan email dan password yang benar
+  3. Klik Login
+
+Hasil yang BENAR:
+  [ ] Redirect ke /dashboard
+  [ ] Di localStorage browser tersimpan: token (string JWT) dan user (object JSON)
+  [ ] Sidebar menampilkan nama dan email user
+
+Cek localStorage:
+  Buka DevTools → Application → Local Storage → http://localhost:5173
+  Harus ada key "token" dan "user"
+
+----------------------------------------------------------------------
+
+2.5 LOGIN PASSWORD SALAH (HARUS DITOLAK)
+-----------------------------------------
+Langkah:
+  1. Masukkan email benar tapi password salah
+  2. Klik Login
+
+Hasil yang BENAR:
+  [ ] Muncul pesan error "Email atau password salah."
+  [ ] HTTP Status: 401 Unauthorized
+  [ ] Tidak ada redirect ke dashboard
+
+----------------------------------------------------------------------
+
+2.6 AKSES HALAMAN PROTECTED TANPA LOGIN
+-----------------------------------------
+Langkah:
+  1. Hapus token dari localStorage (atau buka sesi incognito baru)
+  2. Langsung akses http://localhost:5173/dashboard
+
+Hasil yang BENAR:
+  [ ] Otomatis redirect ke /login
+  [ ] Tidak ada data yang tampil sebelum redirect
+
+----------------------------------------------------------------------
+
+2.7 LOGOUT DENGAN KONFIRMASI
+------------------------------
+Langkah:
+  1. Saat sudah login, klik tombol "Keluar" di sidebar
+  2. Muncul dialog konfirmasi SweetAlert2
+
+Hasil yang BENAR:
+  [ ] Popup konfirmasi muncul dengan judul "Konfirmasi Keluar"
+  [ ] Terdapat dua tombol: "Keluar Sekarang" (merah) dan "Tetap di Sini" (abu)
+  [ ] Klik "Tetap di Sini" → popup tutup, user TETAP login
+  [ ] Klik "Keluar Sekarang" → token dihapus dari localStorage, redirect ke /login
+
+
+================================================================================
+BAGIAN 3 — CEK TRANSAKSI
+================================================================================
+
+3.1 TAMBAH TRANSAKSI PENDAPATAN (INCOME)
+-----------------------------------------
+Langkah:
+  1. Login, buka halaman /transaksi
+  2. Klik tombol tambah transaksi
+  3. Pilih tipe: Pendapatan (income)
+  4. Pilih kategori (hanya tampil kategori jenis=pendapatan)
+  5. Pilih subkategori (opsional)
+  6. Isi nominal (contoh: 5000000)
+  7. Isi tanggal
+  8. Isi keterangan (opsional)
+  9. Klik Simpan
+
+Hasil yang BENAR:
+  [ ] Tidak ada error
+  [ ] Daftar transaksi diperbarui, transaksi baru muncul di atas
+  [ ] Di database, tabel transactions bertambah 1 baris
+  [ ] Tipe tersimpan sebagai "income"
+
+Cek di MySQL:
+  SELECT * FROM transactions ORDER BY id DESC LIMIT 1;
+
+----------------------------------------------------------------------
+
+3.2 TAMBAH TRANSAKSI PENGELUARAN (EXPENSE)
+-------------------------------------------
+Langkah:
+  1. Klik tambah transaksi
+  2. Pilih tipe: Pengeluaran (expense)
+  3. Dropdown kategori harus berubah (hanya tampil kategori pengeluaran)
+  4. Isi data lengkap, klik Simpan
+
+Hasil yang BENAR:
+  [ ] Dropdown kategori BERUBAH isinya saat tipe diubah
+  [ ] Transaksi tersimpan dengan tipe "expense"
+  [ ] Setelah simpan, list transaksi diperbarui
+
+----------------------------------------------------------------------
+
+3.3 DROPDOWN KATEGORI DINAMIS
+-------------------------------
+Ini adalah fitur penting. Saat user ganti tipe Income/Expense,
+dropdown kategori harus berubah secara otomatis.
+
+Yang perlu dicek:
+  [ ] Pilih Pendapatan → dropdown hanya tampilkan kategori jenis "pendapatan"
+      (seharusnya hanya 1 kategori: "Pendapatan")
+  [ ] Pilih Pengeluaran → dropdown tampilkan 15 kategori pengeluaran
+  [ ] Setelah pilih kategori → dropdown subkategori terisi
+
+Cek API yang dipanggil (dari Network tab):
+  GET /api/categories?type=income
+  GET /api/categories?type=expense
+  GET /api/categories/{id}/sub
+
+----------------------------------------------------------------------
+
+3.4 DROPDOWN SUBKATEGORI CHAIN
+--------------------------------
+Langkah:
+  1. Pilih kategori "Belanja"
+  2. Dropdown subkategori harus tampil: Fashion, Gadget & Elektronik,
+     Peralatan Rumah Tangga
+
+  [ ] Subkategori muncul setelah kategori dipilih
+  [ ] Ganti kategori → subkategori ikut berubah
+  [ ] Subkategori bersifat opsional (boleh tidak dipilih)
+
+----------------------------------------------------------------------
+
+3.5 VALIDASI NOMINAL
+---------------------
+  [ ] Nominal 0 atau negatif seharusnya ditolak
+  [ ] Nominal kosong seharusnya ditolak
+  [ ] Nominal sangat besar (misal 999999999) harus diterima tanpa error
+
+  CATATAN: Saat ini validasi amount hanya di sisi frontend.
+  Backend TIDAK memvalidasi amount di transactionController.js.
+  Ini adalah celah yang perlu diperbaiki.
+
+----------------------------------------------------------------------
+
+3.6 LIST TRANSAKSI
+-------------------
+  [ ] Semua transaksi user tampil (bukan transaksi user lain)
+  [ ] Urutan: terbaru di atas (ORDER BY date DESC)
+  [ ] Format tanggal ditampilkan dengan benar
+  [ ] Format nominal tampil dalam format Rupiah (Rp)
+
+  CATATAN KEAMANAN: Endpoint GET /transactions/:user_id menggunakan
+  user_id dari URL parameter, BUKAN dari token JWT.
+  Artinya user bisa mengakses transaksi user lain jika tahu ID-nya.
+  Ini adalah celah keamanan yang harus diperbaiki.
+
+
+================================================================================
+BAGIAN 4 — CEK DASHBOARD & SCORING FINANSIAL
+================================================================================
+
+4.1 DASHBOARD MEMUAT DATA
+--------------------------
+Langkah:
+  1. Pastikan sudah ada minimal 2-3 transaksi (income & expense)
+  2. Buka /dashboard
+
+Hasil yang BENAR:
+  [ ] Total Pendapatan tampil dengan angka benar
+  [ ] Total Pengeluaran tampil dengan angka benar
+  [ ] Saldo Akhir = Total Pendapatan - Total Pengeluaran
+  [ ] Health Score tampil antara 0-100
+  [ ] Kategori kesehatan tampil (Sangat Sehat / Sehat / Cukup / Berisiko / Tidak Sehat)
+
+----------------------------------------------------------------------
+
+4.2 VERIFIKASI PERHITUNGAN SKOR KESEHATAN
+------------------------------------------
+Skor dihitung dari 3 dimensi (total maks 100):
+
+  DIMENSI 1 — Saving Score (maks 40 poin)
+  Formula: Saving Ratio = (Pendapatan - Pengeluaran) / Pendapatan
+
+  Aturan:
+    Saving Ratio >= 30%  → 40 poin
+    Saving Ratio >= 20%  → 30 poin
+    Saving Ratio >= 10%  → 20 poin
+    Saving Ratio >= 0%   → 10 poin
+    Saving Ratio < 0%    → 0 poin
+
+  DIMENSI 2 — Cash Flow Score (maks 30 poin)
+  Formula: Cash Flow = Pendapatan - Pengeluaran
+
+  Aturan:
+    Cash Flow > 0  → 30 poin
+    Cash Flow = 0  → 10 poin
+    Cash Flow < 0  → 0 poin
+
+  DIMENSI 3 — Consumptive Score (maks 30 poin)
+  Formula: Consumptive Ratio = Total Konsumtif / Total Pengeluaran
+
+  Aturan:
+    Consumptive Ratio < 30%  → 30 poin
+    Consumptive Ratio < 50%  → 20 poin
+    Consumptive Ratio < 70%  → 10 poin
+    Consumptive Ratio >= 70% → 0 poin
+
+  TOTAL SKOR = Saving Score + Cash Flow Score + Consumptive Score
+
+Cara verifikasi manual:
+  1. Catat total pendapatan, pengeluaran, dan kategori konsumtif dari dashboard
+  2. Hitung manual di kalkulator
+  3. Bandingkan dengan skor yang tampil di dashboard
+  [ ] Hasil perhitungan manual cocok dengan skor di dashboard
+
+----------------------------------------------------------------------
+
+4.3 KATEGORI KESEHATAN FINANSIAL
+----------------------------------
+  [ ] Skor 80-100 → label "Sangat Sehat"
+  [ ] Skor 60-79  → label "Sehat"
+  [ ] Skor 40-59  → label "Cukup"
+  [ ] Skor 20-39  → label "Berisiko"
+  [ ] Skor 0-19   → label "Tidak Sehat"
+
+----------------------------------------------------------------------
+
+4.4 INSIGHT DAN WARNING OTOMATIS
+----------------------------------
+Skenario uji — buat transaksi dengan kondisi berikut:
+
+  Skenario A: Cash flow POSITIF
+  (Pendapatan > Pengeluaran)
+  [ ] Insight muncul: "Cash flow positif. Anda berhasil menyisihkan..."
+
+  Skenario B: Cash flow NEGATIF
+  (Pengeluaran > Pendapatan)
+  [ ] Warning muncul: "Cash flow negatif. Pengeluaran melebihi pendapatan..."
+
+  Skenario C: Saving ratio < 10%
+  [ ] Warning muncul: "Saving ratio sangat rendah..."
+
+  Skenario D: Saving ratio >= 30%
+  [ ] Insight muncul: "Saving ratio sangat baik: XX%..."
+
+  Skenario E: Pengeluaran konsumtif >= 50% dari total expense
+  [ ] Warning muncul: "Pengeluaran konsumtif sangat tinggi: XX%..."
+
+  Skenario F: Belum ada transaksi pendapatan sama sekali
+  [ ] Warning muncul: "Belum ada data pendapatan..."
+
+----------------------------------------------------------------------
+
+4.5 KLASIFIKASI KATEGORI (KONSUMTIF / KEBUTUHAN / PRODUKTIF)
+--------------------------------------------------------------
+Ini dilakukan otomatis oleh categoryClassifier.js via keyword matching.
+
+Cara uji:
+  1. Tambah transaksi expense dengan kategori "Hobi & Hiburan"
+     → Harus masuk kelompok KONSUMTIF (karena keyword "hiburan" ada di daftar)
+
+  2. Tambah transaksi expense dengan kategori "Tagihan"
+     → Harus masuk kelompok KEBUTUHAN (keyword "listrik", "internet" dll)
+
+  3. Tambah transaksi expense dengan kategori "Tabungan & Investasi"
+     → Harus masuk kelompok PRODUKTIF (keyword "tabungan", "investasi")
+
+  4. Tambah transaksi expense dengan kategori "Transportasi"
+     → Harus masuk kelompok KEBUTUHAN
+
+  [ ] Klasifikasi sesuai dengan daftar keyword di categoryClassifier.js
+  [ ] Kategori yang tidak cocok keyword manapun → default ke "kebutuhan"
+
+----------------------------------------------------------------------
+
+4.6 DASHBOARD SAAT BELUM ADA TRANSAKSI
+----------------------------------------
+Langkah:
+  1. Buat akun baru (belum punya transaksi)
+  2. Buka dashboard
+
+Hasil yang BENAR:
+  [ ] Total Pendapatan = Rp 0
+  [ ] Total Pengeluaran = Rp 0
+  [ ] Saldo Akhir = Rp 0
+  [ ] Skor = 0
+  [ ] Tidak ada crash atau error JavaScript di console
+  [ ] Warning: "Belum ada data pendapatan. Mulai catat transaksi..."
+
+
+================================================================================
+BAGIAN 5 — CEK NAVIGASI DAN UI
+================================================================================
+
+5.1 SIDEBAR NAVIGASI
+---------------------
+  [ ] Link Dashboard → /dashboard (aktif saat di halaman dashboard)
+  [ ] Link Transaksi → /transaksi
+  [ ] Link Laporan   → /laporan
+  [ ] Link Insight   → /insight
+  [ ] Tombol collapse sidebar berfungsi (ChevronLeft)
+  [ ] Tombol expand sidebar berfungsi (ChevronRight)
+  [ ] Saat collapsed, tooltip muncul saat hover icon
+  [ ] Nama dan email user tampil di footer sidebar (saat expanded)
+
+----------------------------------------------------------------------
+
+5.2 PROTECTED ROUTES
+---------------------
+  Halaman yang HARUS redirect ke /login jika tidak ada token:
+  [ ] /dashboard
+  [ ] /transaksi
+  [ ] /laporan
+  [ ] /insight
+
+  Halaman yang HARUS bisa diakses tanpa login:
+  [ ] / (landing page)
+  [ ] /login
+  [ ] /register
+
+----------------------------------------------------------------------
+
+5.3 FORMAT TAMPILAN RUPIAH
+---------------------------
+  [ ] Semua nominal tampil dalam format Rupiah Indonesia
+      Contoh yang benar: "Rp 5.000.000" atau "Rp5.000.000"
+  [ ] Tidak ada tampilan seperti "5000000" tanpa pemformatan
+
+----------------------------------------------------------------------
+
+5.4 HALAMAN LAPORAN DAN INSIGHT
+---------------------------------
+  [ ] Halaman /laporan bisa diakses tanpa crash
+  [ ] Halaman /insight bisa diakses tanpa crash
+
+  CATATAN: Kedua halaman ini saat ini berstatus placeholder.
+  Fitur laporan historis dan insight detail BELUM diimplementasikan.
+  Ini adalah GAP antara konsep (perhitungan.txt) dan implementasi saat ini.
+
+
+================================================================================
+BAGIAN 6 — CEK KEAMANAN (SECURITY CHECK)
+================================================================================
+
+6.1 TOKEN JWT
+--------------
+  [ ] Token tersimpan di localStorage (bukan di cookie — ini adalah tradeoff)
+  [ ] Token tidak bisa digunakan setelah logout (dihapus dari localStorage)
+  [ ] Token expired setelah 7 hari
+
+  Cek token payload (opsional):
+  Buka jwt.io, paste token dari localStorage
+  Harus berisi: { id, email, name, iat, exp }
+
+----------------------------------------------------------------------
+
+6.2 ENDPOINT PROTECTED
+------------------------
+  Coba akses endpoint berikut TANPA token:
+  GET http://localhost:5000/api/transactions/1
+
+  Hasil yang BENAR:
+  [ ] HTTP 401 atau 403
+  [ ] Pesan error tentang token tidak ada / tidak valid
+
+  Jika berhasil diakses tanpa token → ini adalah celah keamanan kritis.
+
+----------------------------------------------------------------------
+
+6.3 CELAH KEAMANAN YANG DIKETAHUI (PERLU PERBAIKAN)
+----------------------------------------------------
+  Berikut adalah celah yang SUDAH teridentifikasi dari analisis kode:
+
+  [!] CEK-KEA-001: IDOR pada endpoint transaksi
+      Endpoint: GET /api/transactions/:user_id
+      Masalah: user_id diambil dari URL, bukan dari JWT token.
+      Risiko: User A bisa mengakses transaksi User B jika tahu ID-nya.
+      Perbaikan: Ganti req.params.user_id dengan req.user.id (dari JWT)
+
+  [!] CEK-KEA-002: Tidak ada validasi amount di backend
+      File: backend/controllers/transactionController.js
+      Masalah: Amount tidak divalidasi (bisa 0, negatif, atau string)
+      Perbaikan: Tambah validasi di addTransaction()
+
+  [!] CEK-KEA-003: CORS terbuka untuk semua origin
+      File: backend/app.js
+      Masalah: cors() tanpa opsi = allow all origins
+      Perbaikan: Batasi ke origin frontend saja di production
+
+  [!] CEK-KEA-004: JWT Secret lemah
+      File: backend/.env
+      Nilai: JWT_SECRET=finsight_secret_key
+      Masalah: Secret terlalu mudah ditebak
+      Perbaikan: Gunakan string random panjang minimal 32 karakter
+
+
+================================================================================
+BAGIAN 7 — VERIFIKASI GAP IMPLEMENTASI vs KONSEP
+================================================================================
+
+Dokumen perhitungan.txt dan finsight_database_concept_erd_guidance.txt
+mendefinisikan sistem yang lebih lengkap dari yang sudah diimplementasikan.
+Berikut adalah daftar fitur yang ada di konsep tapi BELUM ada di kode:
+
+  [GAP-01] SUBJECTIVE SURVEY
+  Status: Tabel subjective_surveys ada di DB, tapi TIDAK ada endpoint API
+          dan TIDAK ada halaman UI untuk mengisi survey.
+  Dampak: Indikator subjektif (satisfaction, security, confidence) tidak
+          ikut masuk ke perhitungan Financial Health Score.
+
+  [GAP-02] FINANCIAL_HEALTH_RESULTS TIDAK DISIMPAN
+  Status: Scoring dihitung on-demand di financeService.js tapi TIDAK
+          disimpan ke tabel financial_health_results.
+  Dampak: Tidak ada histori skor bulanan, tidak bisa lihat tren.
+  Catatan: Tabel sudah siap di DB, tinggal implementasi save/load.
+
+  [GAP-03] TABEL INSIGHTS, WARNINGS, RECOMMENDATIONS TIDAK DIGUNAKAN
+  Status: Ketiga tabel ini ada di DB tapi tidak ada kode yang menyimpan
+          atau mengambil data dari tabel ini.
+  Dampak: Insight & warning selalu dihitung ulang dari nol, tidak persisten.
+
+  [GAP-04] TIDAK ADA UPDATE / DELETE TRANSAKSI
+  Status: Hanya ada POST (add) dan GET (list).
+          Tidak ada endpoint PUT/PATCH atau DELETE untuk transaksi.
+  Dampak: User tidak bisa mengoreksi atau menghapus transaksi yang salah.
+  Use case ada di konsep (use case 6 dan 7 di database_concept.txt).
+
+  [GAP-05] TIDAK ADA LAPORAN BULANAN / TREN
+  Status: Halaman /laporan adalah placeholder kosong.
+  Dampak: Tidak bisa melihat perbandingan bulan ke bulan.
+
+  [GAP-06] TIDAK ADA PAGINATION
+  Status: GET /transactions/:user_id mengambil SEMUA transaksi sekaligus.
+  Dampak: Jika transaksi sudah banyak (ratusan), performa akan turun.
+
+  [GAP-07] ID_KATEGORI DAN ID_SUBKATEGORI TIDAK TERSIMPAN DI TRANSAKSI
+  Status: transactionModel.js hanya menyimpan category dan subcategory
+          sebagai teks, TIDAK menyimpan id_kategori dan id_subkategori.
+  Dampak: Relasi FK ke tabel kategori dan subkategori tidak digunakan.
+          Konsistensi data bergantung pada teks, bukan ID.
+  File: backend/models/transactionModel.js (baris 4-8)
+
+  [GAP-08] SCORING BERBEDA DARI KONSEP PENUH
+  Status: Implementasi hanya menggunakan 3 indikator (saving, cash flow,
+          consumptive). Konsep penuh menggunakan 8 indikator (tambah:
+          expense_score, debt_score, frequency_score, budget_discipline,
+          subjective_score).
+  Dampak: Skor yang tampil saat ini BELUM mewakili evaluasi finansial penuh.
+
+
+================================================================================
+BAGIAN 8 — DATA UJI BAWAAN & CARA CEK ANALISIS/EVALUASI
+================================================================================
+
+File finsight_scoring.sql sudah berisi data uji siap pakai yang dirancang untuk
+mencakup SEMUA 5 kategori kesehatan finansial. Import file SQL, lalu gunakan
+akun berikut untuk memverifikasi bahwa engine analisis bekerja benar.
+
+DAFTAR AKUN TEST:
+  Email              : Password          | Skenario
+  testbaru@test.com  : (password asli)   | Ahmad Reza  — tren Sehat → Sangat Sehat
+  dewi@gmail.com     : (password asli)   | Dewi C      — tren Berisiko → Cukup
+  budi@test.com      : (sama dg user 1)  | Budi Santoso— Tidak Sehat (Mei 2026)
+
+----------------------------------------------------------------------
+
+8.1 CARA IMPORT DATA UJI KE DATABASE
+--------------------------------------
+  1. Buka MySQL Workbench / phpMyAdmin / terminal MySQL
+  2. Jalankan perintah:
+     SOURCE d:/Projek/finsight/finsight_scoring.sql;
+     (atau import via GUI)
+  3. Verifikasi dengan query:
+     SELECT id, name, email FROM users;
+     → Harus ada 3 baris (Ahmad Reza, Dewi C, Budi Santoso)
+  4. Verifikasi jumlah transaksi:
+     SELECT user_id, COUNT(*) AS jumlah FROM transactions GROUP BY user_id;
+     → user_id 1: 15 transaksi, user_id 2: 14 transaksi, user_id 3: 5 transaksi
+
+----------------------------------------------------------------------
+
+8.2 MATRIKS EXPECTED RESULT — SEMUA 5 KATEGORI KESEHATAN
+----------------------------------------------------------
+
+Setelah import dan login, buka /dashboard untuk setiap akun.
+Bandingkan angka yang tampil dengan tabel berikut:
+
++-------------+----------+-------------+-----------+-----------+-------+-------+-----------+------------------+
+| User        | Bulan    | Income      | Expense   | Balance   | Sav%  | Cons% | Skor      | Kategori         |
++-------------+----------+-------------+-----------+-----------+-------+-------+-----------+------------------+
+| Ahmad Reza  | Apr 2026 | 6.000.000   | 5.100.000 | 900.000   | 15%   | 49%   | 70        | SEHAT            |
+| Ahmad Reza  | Mei 2026 | 10.000.000  | 3.250.000 | 6.750.000 | 67.5% | 9.2%  | 100       | SANGAT SEHAT     |
+| Dewi C      | Apr 2026 | 4.000.000   | 4.400.000 | -400.000  | -10%  | 15.9% | 30        | BERISIKO         |
+| Dewi C      | Mei 2026 | 5.000.000   | 4.750.000 | 250.000   | 5%    | 60%   | 50        | CUKUP            |
+| Budi Santoso| Mei 2026 | 3.000.000   | 4.400.000 | -1.400.000| -46%  | 100%  | 0         | TIDAK SEHAT      |
++-------------+----------+-------------+-----------+-----------+-------+-------+-----------+------------------+
+
+CATATAN: Dashboard menampilkan data SEMUA transaksi (bukan per bulan).
+Untuk verifikasi yang tepat, cek dengan query per bulan di bagian 8.4.
+
+----------------------------------------------------------------------
+
+8.3 RINCIAN PERHITUNGAN PER SKENARIO
+--------------------------------------
+
+SKENARIO A — Ahmad Reza, Mei 2026 (Target: SANGAT SEHAT = 100)
+  Transaksi yang harus ada:
+    [income]  Pendapatan / Gaji             : Rp 10.000.000
+    [expense] Tagihan / Listrik             : Rp    500.000  → KEBUTUHAN
+    [expense] Tagihan / Pulsa & Data        : Rp    300.000  → KEBUTUHAN
+    [expense] Transportasi / Bensin         : Rp    400.000  → KEBUTUHAN
+    [expense] Transportasi / Harian        : Rp    250.000  → KEBUTUHAN
+    [expense] Tabungan & Investasi/Investasi: Rp  1.500.000  → PRODUKTIF
+    [expense] Hobi & Hiburan / Film & Musik : Rp    300.000  → KONSUMTIF ★
+  ─────────────────────────────────────────────────────────
+  Total Pengeluaran                          : Rp  3.250.000
+  Saldo (Income − Expense)                  : Rp  6.750.000
+
+  Saving Ratio  = 6.750.000 / 10.000.000 = 67,5%  ≥ 30% → Saving Score  = 40
+  Cash Flow     = positif                           → CF Score       = 30
+  Konsumtif     = Hobi & Hiburan = Rp 300.000
+  Cons. Ratio   = 300.000 / 3.250.000 = 9,2%  < 30%  → Cons. Score   = 30
+  ─────────────────────────────────────────────────────────
+  TOTAL SKOR = 40 + 30 + 30 = 100   →  "SANGAT SEHAT"
+
+  Insight yang HARUS muncul di dashboard:
+  [ ] "Cash flow positif. Anda berhasil menyisihkan Rp6.750.000..."
+  [ ] "Saving ratio sangat baik: 67%..."
+  [ ] "Pengeluaran konsumtif terkendali: 9%..."
+  [ ] "Pengeluaran produktif (investasi...): Rp1.500.000..."
+
+......................................................................
+
+SKENARIO B — Dewi C, Mei 2026 (Target: CUKUP = 50)
+  Transaksi yang harus ada:
+    [income]  Pendapatan / Gaji             : Rp  5.000.000
+    [expense] Tagihan / Listrik             : Rp    500.000  → KEBUTUHAN
+    [expense] Transportasi / Bensin         : Rp    400.000  → KEBUTUHAN
+    [expense] Belanja / Fashion             : Rp  1.200.000  → KONSUMTIF ★
+    [expense] Hobi & Hiburan / Games        : Rp    900.000  → KONSUMTIF ★
+    [expense] Makan & Minuman / Makan Harian: Rp    750.000  → KONSUMTIF ★
+    [expense] Kebutuhan Keluarga / Orang Tua: Rp    500.000  → KEBUTUHAN
+    [expense] Lainnya / Top Up E-Wallet     : Rp    500.000  → KEBUTUHAN
+  ─────────────────────────────────────────────────────────
+  Total Pengeluaran                          : Rp  4.750.000
+  Saldo                                      : Rp    250.000
+
+  Saving Ratio  = 250.000 / 5.000.000 = 5%   ≥ 0%  → Saving Score  = 10
+  Cash Flow     = positif                            → CF Score       = 30
+  Konsumtif     = Belanja + Hobi + Makan = Rp 2.850.000
+  Cons. Ratio   = 2.850.000 / 4.750.000 = 60%  → Cons. Score   = 10
+  ─────────────────────────────────────────────────────────
+  TOTAL SKOR = 10 + 30 + 10 = 50   →  "CUKUP"
+
+  PERHATIAN: "Makan & Minuman" diklasifikasikan KONSUMTIF oleh keyword
+  classifier (karena kata "makan" ada di daftar KONSUMTIF di
+  categoryClassifier.js), meskipun di database kelompok_analisis = kebutuhan.
+  Ini adalah DISCREPANCY yang perlu diperhatikan saat review kode.
+
+  Warning yang HARUS muncul:
+  [ ] "Saving ratio masih rendah: 5%..."
+  [ ] "Pengeluaran konsumtif cukup tinggi: 60%..."
+
+......................................................................
+
+SKENARIO C — Dewi C, April 2026 (Target: BERISIKO = 30)
+  Transaksi yang harus ada:
+    [income]  Pendapatan / Gaji             : Rp  4.000.000
+    [expense] Tagihan / Listrik             : Rp  1.500.000  → KEBUTUHAN
+    [expense] Transportasi / Servis Kendaraan:Rp  1.200.000  → KEBUTUHAN
+    [expense] Kebutuhan Keluarga / Anak     : Rp  1.000.000  → KEBUTUHAN
+    [expense] Belanja / Fashion             : Rp    500.000  → KONSUMTIF ★
+    [expense] Hobi & Hiburan / Games        : Rp    200.000  → KONSUMTIF ★
+  ─────────────────────────────────────────────────────────
+  Total Pengeluaran                          : Rp  4.400.000
+  Saldo                                      : Rp   -400.000
+
+  Saving Ratio  = -400.000 / 4.000.000 = -10%  < 0%  → Saving Score  =  0
+  Cash Flow     = negatif                             → CF Score       =  0
+  Konsumtif     = Belanja + Hobi = Rp 700.000
+  Cons. Ratio   = 700.000 / 4.400.000 = 15,9%  < 30% → Cons. Score   = 30
+  ─────────────────────────────────────────────────────────
+  TOTAL SKOR = 0 + 0 + 30 = 30   →  "BERISIKO"
+
+  Warning yang HARUS muncul:
+  [ ] "Cash flow negatif. Pengeluaran melebihi pendapatan sebesar Rp400.000..."
+  [ ] "Saving ratio sangat rendah: -10%..."
+  [ ] "Belum ada pengeluaran produktif..."
+
+......................................................................
+
+SKENARIO D — Budi Santoso, Mei 2026 (Target: TIDAK SEHAT = 0)
+  Transaksi yang harus ada:
+    [income]  Pendapatan / Gaji             : Rp  3.000.000
+    [expense] Belanja / Fashion             : Rp  1.500.000  → KONSUMTIF ★
+    [expense] Hobi & Hiburan / Games        : Rp  1.200.000  → KONSUMTIF ★
+    [expense] Travelling / Hotel & Villa    : Rp    800.000  → KONSUMTIF ★
+    [expense] Makan & Minuman / Makan Harian: Rp    900.000  → KONSUMTIF ★
+  ─────────────────────────────────────────────────────────
+  Total Pengeluaran                          : Rp  4.400.000
+  Saldo                                      : Rp -1.400.000
+
+  Saving Ratio  = -1.400.000 / 3.000.000 = -46,7% < 0% → Saving Score  =  0
+  Cash Flow     = negatif                               → CF Score       =  0
+  Konsumtif     = SEMUA pengeluaran = Rp 4.400.000
+  Cons. Ratio   = 100%  ≥ 70%                           → Cons. Score   =  0
+  ─────────────────────────────────────────────────────────
+  TOTAL SKOR = 0 + 0 + 0 = 0   →  "TIDAK SEHAT"
+
+  Warning yang HARUS muncul:
+  [ ] "Cash flow negatif. Pengeluaran melebihi pendapatan sebesar Rp1.400.000..."
+  [ ] "Pengeluaran konsumtif sangat tinggi: 100%..."
+  [ ] "Belum ada pengeluaran produktif..."
+
+----------------------------------------------------------------------
+
+8.4 QUERY VERIFIKASI LANGSUNG DI DATABASE
+-------------------------------------------
+Salin query berikut ke MySQL client untuk memvalidasi data dan perhitungan:
+
+  -- 1. Cek ringkasan bulanan semua user
+  SELECT
+    u.name,
+    v.period_year,
+    v.period_month,
+    v.total_income,
+    v.total_expense,
+    (v.total_income - v.total_expense) AS balance,
+    ROUND((v.total_income - v.total_expense) / v.total_income * 100, 1) AS saving_pct,
+    ROUND(v.total_consumptive_expense / v.total_expense * 100, 1)       AS consumptive_pct
+  FROM vw_monthly_financial_summary v
+  JOIN users u ON v.user_id = u.id
+  ORDER BY v.user_id, v.period_year, v.period_month;
+
+  -- 2. Verifikasi transaksi User 1 bulan Mei 2026
+  SELECT date, type, amount, category, subcategory
+  FROM transactions
+  WHERE user_id = 1 AND MONTH(date) = 5 AND YEAR(date) = 2026
+  ORDER BY date;
+
+  -- 3. Cek klasifikasi kelompok_analisis dari DB (berbeda dari keyword classifier):
+  SELECT t.category, k.kelompok_analisis, SUM(t.amount) AS total
+  FROM transactions t
+  JOIN kategori k ON t.id_kategori = k.id_kategori
+  WHERE t.user_id = 2 AND t.type = 'expense'
+    AND MONTH(t.date) = 5 AND YEAR(t.date) = 2026
+  GROUP BY t.category, k.kelompok_analisis;
+
+----------------------------------------------------------------------
+
+8.5 CARA CEK APAKAH ENGINE ANALISIS BERJALAN BENAR
+----------------------------------------------------
+Langkah sistematis untuk verifikasi end-to-end engine scoring:
+
+Langkah 1 — Import data uji
+  Jalankan finsight_scoring.sql di MySQL.
+  Verifikasi 3 user dan 34 transaksi ada di database.
+
+Langkah 2 — Login sebagai Ahmad Reza (testbaru@test.com)
+  Buka /dashboard.
+  Dashboard menampilkan SEMUA bulan sekaligus (April + Mei gabungan).
+  Untuk cek per skenario, cara terbaik saat ini adalah:
+  - Hapus data bulan April sementara, cek skor Mei saja
+  - Atau catat angka gabungan dan hitung manual
+
+Langkah 3 — Verifikasi dengan skenario isolasi
+  Cara terbaik untuk QA per skenario adalah buat akun baru via /register,
+  lalu input HANYA transaksi dari skenario yang ingin diuji (lihat 8.3).
+  Ini memastikan tidak ada pengaruh data lintas bulan.
+
+Langkah 4 — Hitung manual dan bandingkan
+  Gunakan kalkulator:
+    Skor = Saving Score + CF Score + Consumptive Score
+  Bandingkan dengan angka di dashboard.
+  Toleransi: 0 (harus TEPAT sama, tidak ada pembulatan berbeda).
+
+Langkah 5 — Cek insight dan warning yang muncul
+  Cocokkan dengan daftar expected di bagian 8.3 masing-masing skenario.
+  Jika insight tidak muncul padahal seharusnya → bug di generateInsightWarning().
+
+Langkah 6 — Cek kelompok konsumtif di dashboard
+  Pastikan transaksi yang SEHARUSNYA konsumtif muncul di kelompok konsumtif,
+  bukan di kebutuhan.
+  Gunakan tabel ★ di bagian 8.3 sebagai acuan.
+
+----------------------------------------------------------------------
+
+8.6 DISCREPANCY CLASSIFIER — YANG PERLU DIKETAHUI
+---------------------------------------------------
+Berikut kategori yang hasilnya BERBEDA antara keyword classifier (backend)
+vs kelompok_analisis di tabel kategori (database):
+
+  Nama Kategori          | DB (kelompok_analisis) | Classifier (kode) | Catatan
+  -----------------------|------------------------|-------------------|------------------
+  Makan & Minuman        | kebutuhan              | KONSUMTIF         | "makan" di KONSUMTIF
+  Belanja Bulanan        | kebutuhan              | KONSUMTIF         | "belanja" di KONSUMTIF
+  Kesehatan & Perawatan  | kebutuhan              | KONSUMTIF         | "perawatan" di KONSUMTIF
+  Olahraga               | konsumtif              | KEBUTUHAN         | tidak ada keyword → default
+
+  Implikasi untuk QA:
+  - Skor yang tampil di dashboard mengikuti CLASSIFIER (keyword matching)
+  - Bukan mengikuti kelompok_analisis di database
+  - Data SQL bawaan sudah mempertimbangkan perilaku classifier ini
+  - Untuk akurasi sempurna, keyword classifier perlu diselaraskan dengan DB
+
+
+================================================================================
+BAGIAN 9 — SKENARIO UJI END-TO-END (INPUT MANUAL)
+================================================================================
+
+CATATAN: Skenario di bawah adalah untuk input transaksi secara manual via UI,
+berbeda dari data uji bawaan (Bagian 8) yang sudah ada di database.
+Gunakan skenario ini untuk menguji alur input user dari nol.
+
+SKENARIO 1 — USER BARU LENGKAP
+---------------------------------
+  1. Buka browser incognito
+  2. Akses /register → daftar dengan email baru
+  3. Redirect ke /login → login
+  4. Dashboard terbuka → semua angka 0, ada warning "belum ada data"
+  5. Buka /transaksi → tambah 1 income: Rp 5.000.000 (Pendapatan/Gaji)
+  6. Tambah 1 expense: Rp 2.000.000 (Belanja/Fashion)
+  7. Tambah 1 expense: Rp 1.000.000 (Tagihan/Listrik)
+  8. Kembali ke dashboard
+
+Hasil yang DIHARAPKAN:
+  [ ] Total Pendapatan: Rp 5.000.000
+  [ ] Total Pengeluaran: Rp 3.000.000
+  [ ] Saldo: Rp 2.000.000
+  [ ] Saving Ratio: 40% → Saving Score: 40
+  [ ] Cash Flow: positif → CF Score: 30
+  [ ] Konsumtif: Belanja = Rp 2.000.000 / Rp 3.000.000 = 66%
+      → antara 50%-70% → Consumptive Score: 10
+  [ ] Total Skor: 40 + 30 + 10 = 80 → "Sangat Sehat"
+  [ ] Insight: cash flow positif + saving ratio baik
+
+----------------------------------------------------------------------
+
+SKENARIO 2 — USER DENGAN KEUANGAN BURUK
+-----------------------------------------
+  1. Login, tambah income: Rp 3.000.000
+  2. Tambah expense: Rp 4.000.000 (lebih besar dari income)
+
+Hasil yang DIHARAPKAN:
+  [ ] Saldo: Rp -1.000.000
+  [ ] Saving Ratio: negatif → Saving Score: 0
+  [ ] Cash Flow: negatif → CF Score: 0
+  [ ] Total Skor sangat rendah (< 30)
+  [ ] Warning: "Cash flow negatif..."
+  [ ] Label: "Berisiko" atau "Tidak Sehat"
+
+----------------------------------------------------------------------
+
+SKENARIO 3 — UJI KLASIFIKASI KATEGORI
+----------------------------------------
+Tambah beberapa transaksi expense dengan kategori berbeda:
+  - "Hobi & Hiburan"       → harus masuk KONSUMTIF
+  - "Belanja Bulanan"      → harus masuk KEBUTUHAN
+  - "Tabungan & Investasi" → harus masuk PRODUKTIF
+  - "Pinjaman"             → harus masuk KEBUTUHAN
+  - "Kesehatan & Perawatan Diri" → harus masuk KEBUTUHAN
+
+  [ ] Dashboard menampilkan breakdown kategori yang sesuai
+  [ ] Pengeluaran produktif menghasilkan insight "Pengeluaran produktif..."
+
+
+================================================================================
+BAGIAN 10 — CEK PERFORMA DAN STABILITAS
+================================================================================
+
+9.1 REFRESH HALAMAN
+--------------------
+  [ ] Refresh di /dashboard → data tetap muncul (bukan blank)
+  [ ] Refresh di /transaksi → list tetap muncul
+  [ ] Refresh tidak log out user (token masih ada di localStorage)
+
+----------------------------------------------------------------------
+
+9.2 MULTI-TAB
+--------------
+  [ ] Buka /dashboard di tab 1 dan /transaksi di tab 2
+  [ ] Tambah transaksi di tab 2, refresh tab 1
+  [ ] Dashboard di tab 1 harus menampilkan data terbaru
+
+----------------------------------------------------------------------
+
+9.3 KONSISTENSI DATA
+---------------------
+  [ ] Data yang tampil di frontend cocok dengan data di database MySQL
+  [ ] Hitung manual dari database, bandingkan dengan angka di dashboard
+
+  Query MySQL untuk verifikasi:
+  SELECT
+    SUM(CASE WHEN type='income' THEN amount ELSE 0 END) AS total_income,
+    SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS total_expense,
+    SUM(CASE WHEN type='income' THEN amount ELSE -amount END) AS saldo
+  FROM transactions
+  WHERE user_id = [ID_USER_ANDA];
+
+
+================================================================================
+BAGIAN 11 — RINGKASAN STATUS SISTEM
+================================================================================
+
+FITUR YANG SUDAH BERJALAN (IMPLEMENTED & WORKING):
+  [OK] Register akun baru
+  [OK] Login dan logout dengan JWT
+  [OK] Proteksi halaman dengan token
+  [OK] Tambah transaksi income dan expense
+  [OK] List transaksi per user
+  [OK] Dropdown kategori dan subkategori dinamis
+  [OK] Kalkulasi skor kesehatan finansial (3 dimensi)
+  [OK] Generate insight dan warning otomatis
+  [OK] Klasifikasi kategori via keyword matching
+  [OK] Konfirmasi logout dengan SweetAlert2
+  [OK] Sidebar collapse/expand
+
+FITUR YANG BELUM DIIMPLEMENTASIKAN (GAPS):
+  [--] Survey subjektif (monthly self-assessment)
+  [--] Simpan hasil scoring ke database (financial_health_results)
+  [--] Laporan tren bulanan (/laporan)
+  [--] Halaman insight detail (/insight)
+  [--] Edit dan hapus transaksi
+  [--] Pagination transaksi
+  [--] Penyimpanan id_kategori/id_subkategori di transaksi
+
+CELAH KEAMANAN YANG PERLU DIPERBAIKI:
+  [!] IDOR — user_id diambil dari URL, bukan dari JWT
+  [!] Tidak ada validasi amount di backend
+  [!] CORS terbuka semua origin
+  [!] JWT Secret lemah
+
+
+================================================================================
+CATATAN PENGUJIAN
+================================================================================
+
+Tanggal Cek : _______________
+Penguji     : _______________
+
+Item Lulus  : ______ / total
+Item Gagal  : ______
+Item N/A    : ______
+
+Catatan Temuan:
+______________________________________________________________________________
+______________________________________________________________________________
+______________________________________________________________________________
+______________________________________________________________________________
+
+================================================================================
+END OF DOCUMENT
+================================================================================

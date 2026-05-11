@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { login } from "../services/authService.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import logoIcon from "../assets/finsight_icon_only.png";
+import Footer from "../components/Footer.jsx";
 import styles from "../styles/pages/Auth.module.css";
 
 function Login() {
@@ -39,11 +40,12 @@ function Login() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.content}>
       <div className={styles.card}>
-        <div className={styles.logoRow}>
+        <Link to="/" className={styles.logoRow}>
           <img src={logoIcon} alt="FinSight" className={styles.logo} />
           <p className={styles.appName}>FinSight</p>
-        </div>
+        </Link>
 
         <h1 className={styles.heading}>Selamat Datang</h1>
         <p className={styles.subheading}>Masuk ke akun FinSight Anda</p>
@@ -100,6 +102,8 @@ function Login() {
           </Link>
         </p>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

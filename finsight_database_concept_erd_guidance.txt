@@ -1,0 +1,839 @@
+FINSIGHT DATABASE CONCEPT GUIDANCE
+Panduan Konsep Database untuk ERD, Relasi Tabel, dan Diagram Sistem
+
+============================================================
+1. TUJUAN DATABASE
+============================================================
+
+Database FinSight dirancang untuk mendukung sistem keuangan pribadi berbasis web yang memiliki fungsi utama:
+
+1. Menyimpan data pengguna.
+2. Menyimpan kategori dan subkategori transaksi.
+3. Mencatat transaksi pemasukan dan pengeluaran.
+4. Menghitung ringkasan keuangan bulanan.
+5. Menyimpan hasil evaluasi kesehatan finansial.
+6. Menyimpan hasil survey subjektif pengguna.
+7. Menyimpan insight, warning, dan rekomendasi otomatis.
+
+Konsep utama database ini mengikuti model:
+
+Composite Index + Multi Indicator Scoring + Equal Weighting
+
+Artinya, sistem tidak hanya mencatat transaksi, tetapi juga mengubah data transaksi menjadi indikator kesehatan finansial yang dapat dianalisis dan dievaluasi.
+
+============================================================
+2. KONSEP UTAMA DATABASE
+============================================================
+
+Database ini memiliki 5 kelompok utama tabel:
+
+1. Master Data
+   - users
+   - kategori
+   - subkategori
+
+2. Transaction Data
+   - transactions
+
+3. Subjective Assessment Data
+   - subjective_surveys
+
+4. Financial Evaluation Data
+   - financial_health_results
+
+5. Output Analysis Data
+   - insights
+   - warnings
+   - recommendations
+
+Selain itu, terdapat view untuk membantu proses analisis:
+
+1. vw_monthly_financial_summary
+2. vw_transaction_detail
+
+============================================================
+3. ENTITAS UTAMA DALAM ERD
+============================================================
+
+------------------------------------------------------------
+3.1 USERS
+------------------------------------------------------------
+
+Tabel users menyimpan data akun pengguna aplikasi.
+
+Fungsi:
+- Menjadi entitas utama pemilik data transaksi.
+- Setiap transaksi, survey, hasil evaluasi, insight, warning, dan rekomendasi terhubung ke user.
+
+Primary Key:
+- id
+
+Relasi:
+- 1 user memiliki banyak transactions.
+- 1 user memiliki banyak subjective_surveys.
+- 1 user memiliki banyak financial_health_results.
+- 1 user memiliki banyak insights.
+- 1 user memiliki banyak warnings.
+- 1 user memiliki banyak recommendations.
+
+Relasi ERD:
+users 1 : N transactions
+users 1 : N subjective_surveys
+users 1 : N financial_health_results
+users 1 : N insights
+users 1 : N warnings
+users 1 : N recommendations
+
+------------------------------------------------------------
+3.2 KATEGORI
+------------------------------------------------------------
+
+Tabel kategori menyimpan kategori utama transaksi.
+
+Contoh kategori:
+- Pendapatan
+- Belanja
+- Belanja Bulanan
+- Hadiah & Amal
+- Hobi & Hiburan
+- Kebutuhan Keluarga
+- Kesehatan & Perawatan Diri
+- Makan & Minuman
+- Olahraga
+- Pendidikan
+- Pinjaman
+- Tabungan & Investasi
+- Tagihan
+- Transportasi
+- Travelling
+- Lainnya
+
+Kolom penting:
+- id_kategori
+- nama_kategori
+- jenis
+- kelompok_analisis
+
+Penjelasan jenis:
+- pendapatan
+- pengeluaran
+
+Penjelasan kelompok_analisis:
+- pendapatan
+- kebutuhan
+- kewajiban
+- konsumtif
+- tabungan_investasi
+- lainnya
+
+Fungsi kelompok_analisis:
+Kolom ini digunakan backend untuk mengelompokkan transaksi ke dalam indikator analisis, tanpa mengubah nama kategori dan subkategori yang sudah dibuat.
+
+Contoh:
+- Belanja masuk kelompok konsumtif.
+- Pinjaman masuk kelompok kewajiban.
+- Tabungan & Investasi masuk kelompok tabungan_investasi.
+- Belanja Bulanan masuk kelompok kebutuhan.
+
+Primary Key:
+- id_kategori
+
+Relasi:
+- 1 kategori memiliki banyak subkategori.
+- 1 kategori dapat digunakan oleh banyak transactions.
+
+Relasi ERD:
+kategori 1 : N subkategori
+kategori 1 : N transactions
+
+------------------------------------------------------------
+3.3 SUBKATEGORI
+------------------------------------------------------------
+
+Tabel subkategori menyimpan rincian dari kategori utama.
+
+Contoh:
+- Kategori Belanja memiliki subkategori Fashion, Gadget & Elektronik, Peralatan Rumah Tangga.
+- Kategori Hobi & Hiburan memiliki subkategori Buku, Film & Musik, Games, Hobi, Peliharaan.
+- Kategori Pinjaman memiliki subkategori Cicilan Mobil, Cicilan Rumah, Cicilan Motor, Kartu Kredit.
+
+Primary Key:
+- id_subkategori
+
+Foreign Key:
+- id_kategori mengarah ke kategori.id_kategori
+
+Relasi:
+- 1 subkategori dimiliki oleh 1 kategori.
+- 1 subkategori dapat digunakan oleh banyak transaksi.
+
+Relasi ERD:
+subkategori N : 1 kategori
+subkategori 1 : N transactions
+
+Catatan penting:
+Subkategori bersifat detail transaksi. Perhitungan utama tetap mengacu pada kategori dan kelompok_analisis.
+
+------------------------------------------------------------
+3.4 TRANSACTIONS
+------------------------------------------------------------
+
+Tabel transactions menyimpan semua transaksi keuangan pengguna.
+
+Fungsi:
+- Menjadi sumber utama perhitungan kesehatan finansial.
+- Menjadi dasar analisis pemasukan, pengeluaran, konsumtif, kewajiban, dan tabungan.
+
+Kolom penting:
+- id
+- user_id
+- type
+- id_kategori
+- id_subkategori
+- category
+- subcategory
+- amount
+- description
+- date
+
+Penjelasan type:
+- income = pemasukan
+- expense = pengeluaran
+
+Foreign Key:
+- user_id mengarah ke users.id
+- id_kategori mengarah ke kategori.id_kategori
+- id_subkategori mengarah ke subkategori.id_subkategori
+
+Relasi:
+- 1 user memiliki banyak transaksi.
+- 1 kategori dapat digunakan oleh banyak transaksi.
+- 1 subkategori dapat digunakan oleh banyak transaksi.
+
+Relasi ERD:
+users 1 : N transactions
+kategori 1 : N transactions
+subkategori 1 : N transactions
+
+Catatan:
+Kolom category dan subcategory tetap dipertahankan untuk kompatibilitas frontend lama, tetapi relasi utama yang lebih rapi menggunakan id_kategori dan id_subkategori.
+
+============================================================
+4. ENTITAS SURVEY SUBJEKTIF
+============================================================
+
+------------------------------------------------------------
+4.1 SUBJECTIVE_SURVEYS
+------------------------------------------------------------
+
+Tabel subjective_surveys menyimpan penilaian subjektif pengguna terhadap kondisi keuangannya.
+
+Fungsi:
+- Mendukung indikator subjektif dalam evaluasi kesehatan finansial.
+- Dilakukan secara bulanan.
+- Menggunakan skala Likert 1 sampai 5.
+
+Kolom penting:
+- id
+- user_id
+- period_year
+- period_month
+- financial_satisfaction
+- financial_security
+- financial_confidence
+- note
+
+Indikator subjektif:
+1. financial_satisfaction
+   Mengukur kepuasan pengguna terhadap kondisi keuangannya.
+
+2. financial_security
+   Mengukur rasa aman pengguna terhadap kondisi finansialnya.
+
+3. financial_confidence
+   Mengukur kepercayaan diri pengguna dalam mengelola keuangan.
+
+Foreign Key:
+- user_id mengarah ke users.id
+
+Relasi:
+- 1 user dapat memiliki banyak survey bulanan.
+- 1 user hanya boleh memiliki 1 survey untuk kombinasi bulan dan tahun yang sama.
+
+Relasi ERD:
+users 1 : N subjective_surveys
+
+Constraint penting:
+- period_month harus 1 sampai 12.
+- nilai survey harus 1 sampai 5.
+- kombinasi user_id, period_year, dan period_month harus unik.
+
+============================================================
+5. ENTITAS HASIL EVALUASI KESEHATAN FINANSIAL
+============================================================
+
+------------------------------------------------------------
+5.1 FINANCIAL_HEALTH_RESULTS
+------------------------------------------------------------
+
+Tabel financial_health_results menyimpan hasil evaluasi kesehatan finansial pengguna per bulan.
+
+Fungsi:
+- Menyimpan hasil akhir scoring.
+- Menyimpan total pemasukan dan pengeluaran bulanan.
+- Menyimpan rasio finansial.
+- Menyimpan skor ordinal 1-5.
+- Menyimpan kategori kesehatan finansial.
+
+Kolom data mentah bulanan:
+- total_income
+- total_expense
+- total_saving_investment
+- total_debt_payment
+- total_consumptive_expense
+- transaction_count
+- consumptive_transaction_count
+
+Kolom rasio:
+- saving_ratio
+- expense_ratio
+- cash_flow
+- debt_ratio
+- consumptive_ratio
+- transaction_frequency_ratio
+
+Kolom skor ordinal:
+- saving_score
+- expense_score
+- cash_flow_score
+- debt_score
+- consumptive_score
+- frequency_score
+- budget_discipline_score
+- subjective_score
+
+Kolom hasil akhir:
+- total_indicator_score
+- max_indicator_score
+- financial_health_score
+- health_category
+
+Foreign Key:
+- user_id mengarah ke users.id
+
+Relasi:
+- 1 user memiliki banyak hasil evaluasi bulanan.
+- 1 hasil evaluasi dapat memiliki banyak insight.
+- 1 hasil evaluasi dapat memiliki banyak warning.
+- 1 hasil evaluasi dapat memiliki banyak recommendation.
+
+Relasi ERD:
+users 1 : N financial_health_results
+financial_health_results 1 : N insights
+financial_health_results 1 : N warnings
+financial_health_results 1 : N recommendations
+
+Constraint penting:
+- period_month harus 1 sampai 12.
+- financial_health_score harus 0 sampai 100.
+- skor ordinal harus 1 sampai 5.
+- kombinasi user_id, period_year, dan period_month harus unik.
+
+============================================================
+6. KONSEP SCORING DALAM DATABASE
+============================================================
+
+Database mendukung konsep scoring sebagai berikut:
+
+1. Backend mengambil data transaksi bulanan.
+2. Data transaksi dikelompokkan berdasarkan kategori dan kelompok_analisis.
+3. Sistem menghitung total income, expense, saving, debt, dan consumptive expense.
+4. Sistem menghitung rasio finansial.
+5. Setiap indikator dikonversi menjadi skor ordinal 1 sampai 5.
+6. Semua skor indikator dijumlahkan.
+7. Skor akhir dinormalisasi ke 0 sampai 100.
+8. Sistem menentukan kategori kesehatan finansial.
+9. Sistem membuat insight, warning, dan recommendation.
+
+Formula utama:
+
+Financial Health Score = (Total Indicator Score / Maximum Score) x 100
+
+Metode pembobotan:
+Equal Weighting
+
+Artinya semua indikator dianggap memiliki bobot yang sama.
+
+============================================================
+7. KATEGORI HASIL KESEHATAN FINANSIAL
+============================================================
+
+Kategori hasil akhir disimpan dalam kolom health_category.
+
+Rentang skor:
+
+80 - 100  = Sangat Sehat
+60 - 79   = Sehat
+40 - 59   = Cukup
+20 - 39   = Berisiko
+0 - 19    = Tidak Sehat
+
+============================================================
+8. ENTITAS OUTPUT ANALISIS
+============================================================
+
+------------------------------------------------------------
+8.1 INSIGHTS
+------------------------------------------------------------
+
+Tabel insights menyimpan pesan analisis otomatis untuk pengguna.
+
+Fungsi:
+- Memberikan penjelasan dari data keuangan.
+- Membantu pengguna memahami kondisi finansial tanpa membaca angka mentah.
+
+Kolom penting:
+- id
+- user_id
+- financial_health_result_id
+- insight_type
+- title
+- message
+- severity
+
+Jenis insight_type:
+- objective
+- behavioral
+- subjective
+- trend
+- general
+
+Severity:
+- info
+- success
+- warning
+- danger
+
+Relasi:
+users 1 : N insights
+financial_health_results 1 : N insights
+
+Contoh insight:
+- Pengeluaran Anda lebih besar dibanding pemasukan.
+- Tabungan Anda masih rendah.
+- Pengeluaran konsumtif cukup tinggi.
+- Arus kas Anda positif bulan ini.
+
+------------------------------------------------------------
+8.2 WARNINGS
+------------------------------------------------------------
+
+Tabel warnings menyimpan peringatan otomatis jika kondisi finansial berisiko.
+
+Fungsi:
+- Memberikan alert kepada pengguna.
+- Menandai kondisi yang perlu perhatian.
+
+Kolom penting:
+- id
+- user_id
+- financial_health_result_id
+- warning_code
+- title
+- message
+- trigger_value
+- threshold_value
+- is_resolved
+
+Relasi:
+users 1 : N warnings
+financial_health_results 1 : N warnings
+
+Contoh trigger warning:
+- saving_ratio < 10%
+- expense_ratio > 90%
+- cash_flow < 0
+- consumptive_ratio > 70%
+- debt_ratio tinggi
+
+Contoh warning_code:
+- LOW_SAVING
+- HIGH_EXPENSE
+- NEGATIVE_CASHFLOW
+- HIGH_CONSUMPTIVE
+- HIGH_DEBT
+
+------------------------------------------------------------
+8.3 RECOMMENDATIONS
+------------------------------------------------------------
+
+Tabel recommendations menyimpan saran otomatis untuk memperbaiki kondisi finansial pengguna.
+
+Fungsi:
+- Memberikan arahan praktis berdasarkan hasil analisis.
+- Mendukung decision support sederhana.
+
+Kolom penting:
+- id
+- user_id
+- financial_health_result_id
+- recommendation_type
+- title
+- message
+- priority
+
+Jenis recommendation_type:
+- saving
+- expense_control
+- consumptive_control
+- debt_control
+- budgeting
+- general
+
+Priority:
+- low
+- medium
+- high
+
+Relasi:
+users 1 : N recommendations
+financial_health_results 1 : N recommendations
+
+Contoh rekomendasi:
+- Tingkatkan tabungan minimal 10% dari pendapatan.
+- Kurangi pengeluaran hiburan.
+- Batasi transaksi kecil berulang.
+- Prioritaskan kebutuhan utama.
+- Kurangi penggunaan kredit konsumtif.
+
+============================================================
+9. VIEW DATABASE
+============================================================
+
+------------------------------------------------------------
+9.1 VW_MONTHLY_FINANCIAL_SUMMARY
+------------------------------------------------------------
+
+View ini digunakan untuk menghitung ringkasan keuangan bulanan berdasarkan transaksi.
+
+Fungsi:
+- Mengelompokkan transaksi berdasarkan user, tahun, dan bulan.
+- Menghitung total income.
+- Menghitung total expense.
+- Menghitung total saving atau investment.
+- Menghitung total debt payment.
+- Menghitung total consumptive expense.
+- Menghitung jumlah transaksi.
+- Menghitung jumlah transaksi konsumtif.
+
+View ini membantu backend sebelum menyimpan hasil ke financial_health_results.
+
+Sumber data:
+- transactions
+- kategori
+
+Relasi logis:
+transactions JOIN kategori
+
+Output utama:
+- user_id
+- period_year
+- period_month
+- total_income
+- total_expense
+- total_saving_investment
+- total_debt_payment
+- total_consumptive_expense
+- transaction_count
+- consumptive_transaction_count
+
+------------------------------------------------------------
+9.2 VW_TRANSACTION_DETAIL
+------------------------------------------------------------
+
+View ini digunakan untuk menampilkan detail transaksi yang lengkap.
+
+Fungsi:
+- Memudahkan frontend menampilkan transaksi.
+- Menggabungkan data transaksi dengan user, kategori, dan subkategori.
+
+Sumber data:
+- transactions
+- users
+- kategori
+- subkategori
+
+Output utama:
+- id transaksi
+- nama user
+- type transaksi
+- amount
+- date
+- nama kategori
+- jenis
+- kelompok_analisis
+- nama subkategori
+
+============================================================
+10. ALUR DATA SISTEM
+============================================================
+
+Alur utama sistem:
+
+1. User login atau terdaftar di sistem.
+2. User memasukkan transaksi pemasukan atau pengeluaran.
+3. Transaksi disimpan ke tabel transactions.
+4. Transaksi terhubung ke kategori dan subkategori.
+5. Backend mengambil ringkasan bulanan melalui vw_monthly_financial_summary.
+6. Backend menghitung rasio finansial.
+7. Backend mengubah setiap indikator menjadi skor ordinal 1 sampai 5.
+8. Backend menghitung Financial Health Score.
+9. Hasil disimpan ke financial_health_results.
+10. Jika user mengisi survey bulanan, data disimpan ke subjective_surveys.
+11. Backend membuat insight, warning, dan recommendation.
+12. Dashboard menampilkan score, kategori, insight, warning, dan rekomendasi.
+
+============================================================
+11. RELASI UTAMA UNTUK ERD
+============================================================
+
+Daftar relasi utama:
+
+1. users 1 : N transactions
+   Satu user dapat memiliki banyak transaksi.
+
+2. kategori 1 : N subkategori
+   Satu kategori dapat memiliki banyak subkategori.
+
+3. kategori 1 : N transactions
+   Satu kategori dapat dipakai oleh banyak transaksi.
+
+4. subkategori 1 : N transactions
+   Satu subkategori dapat dipakai oleh banyak transaksi.
+
+5. users 1 : N subjective_surveys
+   Satu user dapat mengisi banyak survey bulanan.
+
+6. users 1 : N financial_health_results
+   Satu user dapat memiliki banyak hasil evaluasi bulanan.
+
+7. financial_health_results 1 : N insights
+   Satu hasil evaluasi dapat menghasilkan banyak insight.
+
+8. financial_health_results 1 : N warnings
+   Satu hasil evaluasi dapat menghasilkan banyak warning.
+
+9. financial_health_results 1 : N recommendations
+   Satu hasil evaluasi dapat menghasilkan banyak rekomendasi.
+
+10. users 1 : N insights
+    Satu user dapat memiliki banyak insight.
+
+11. users 1 : N warnings
+    Satu user dapat memiliki banyak warning.
+
+12. users 1 : N recommendations
+    Satu user dapat memiliki banyak rekomendasi.
+
+============================================================
+12. KARDINALITAS ERD RINGKAS
+============================================================
+
+users
+  1 ---- N transactions
+  1 ---- N subjective_surveys
+  1 ---- N financial_health_results
+  1 ---- N insights
+  1 ---- N warnings
+  1 ---- N recommendations
+
+kategori
+  1 ---- N subkategori
+  1 ---- N transactions
+
+subkategori
+  1 ---- N transactions
+
+financial_health_results
+  1 ---- N insights
+  1 ---- N warnings
+  1 ---- N recommendations
+
+============================================================
+13. KONSEP DFD / ALUR PROSES
+============================================================
+
+External Entity:
+- User
+
+Process utama:
+1. Kelola Akun Pengguna
+2. Kelola Kategori dan Subkategori
+3. Kelola Transaksi
+4. Hitung Ringkasan Bulanan
+5. Hitung Financial Health Score
+6. Kelola Survey Subjektif
+7. Generate Insight
+8. Generate Warning
+9. Generate Recommendation
+10. Tampilkan Dashboard
+
+Data Store:
+- users
+- kategori
+- subkategori
+- transactions
+- subjective_surveys
+- financial_health_results
+- insights
+- warnings
+- recommendations
+
+Alur DFD ringkas:
+
+User -> input transaksi -> Sistem Transaksi -> transactions
+transactions -> Proses Analisis Bulanan -> financial_health_results
+subjective_surveys -> Proses Analisis Bulanan -> financial_health_results
+financial_health_results -> Generate Insight -> insights
+financial_health_results -> Generate Warning -> warnings
+financial_health_results -> Generate Recommendation -> recommendations
+Dashboard <- financial_health_results, insights, warnings, recommendations
+
+============================================================
+14. KONSEP USE CASE
+============================================================
+
+Aktor utama:
+- User
+
+Use case utama:
+1. Registrasi akun
+2. Login
+3. Mengelola profil
+4. Melihat kategori transaksi
+5. Menambah transaksi
+6. Mengubah transaksi
+7. Menghapus transaksi
+8. Melihat riwayat transaksi
+9. Melihat ringkasan bulanan
+10. Mengisi survey subjektif bulanan
+11. Melihat Financial Health Score
+12. Melihat insight otomatis
+13. Melihat warning
+14. Melihat rekomendasi
+15. Melihat laporan keuangan
+
+============================================================
+15. KONSEP CLASS DIAGRAM
+============================================================
+
+Class utama yang dapat dibuat:
+
+1. User
+   - id
+   - name
+   - email
+   - password
+
+2. Kategori
+   - id_kategori
+   - nama_kategori
+   - jenis
+   - kelompok_analisis
+
+3. Subkategori
+   - id_subkategori
+   - id_kategori
+   - nama_subkategori
+
+4. Transaction
+   - id
+   - user_id
+   - type
+   - id_kategori
+   - id_subkategori
+   - amount
+   - description
+   - date
+
+5. SubjectiveSurvey
+   - id
+   - user_id
+   - period_year
+   - period_month
+   - financial_satisfaction
+   - financial_security
+   - financial_confidence
+
+6. FinancialHealthResult
+   - id
+   - user_id
+   - period_year
+   - period_month
+   - total_income
+   - total_expense
+   - ratios
+   - scores
+   - financial_health_score
+   - health_category
+
+7. Insight
+   - id
+   - user_id
+   - financial_health_result_id
+   - insight_type
+   - title
+   - message
+   - severity
+
+8. Warning
+   - id
+   - user_id
+   - financial_health_result_id
+   - warning_code
+   - title
+   - message
+   - trigger_value
+   - threshold_value
+   - is_resolved
+
+9. Recommendation
+   - id
+   - user_id
+   - financial_health_result_id
+   - recommendation_type
+   - title
+   - message
+   - priority
+
+============================================================
+16. CATATAN DESAIN DATABASE
+============================================================
+
+1. Kategori dan subkategori tidak diubah karena merupakan konsep utama user interface.
+
+2. Kolom kelompok_analisis digunakan sebagai jembatan antara kategori tampilan dan kebutuhan analisis backend.
+
+3. Financial health tidak dihitung langsung dari satu angka, tetapi dari beberapa indikator.
+
+4. Hasil perhitungan disimpan per bulan agar sistem dapat menampilkan tren historis.
+
+5. Subjective survey dibuat terpisah agar dapat digunakan sebagai indikator tambahan tanpa mengganggu data transaksi.
+
+6. Insight, warning, dan recommendation dibuat dalam tabel terpisah agar hasil analisis mudah ditampilkan di dashboard.
+
+7. View digunakan untuk mempermudah query laporan tanpa merusak struktur tabel utama.
+
+============================================================
+17. RINGKASAN KONSEP DATABASE
+============================================================
+
+Database FinSight dibangun dengan konsep bahwa data transaksi adalah sumber utama analisis. Data transaksi dikelompokkan melalui kategori dan subkategori. Kategori memiliki kelompok_analisis yang digunakan untuk mengklasifikasikan transaksi sebagai pendapatan, kebutuhan, kewajiban, konsumtif, tabungan investasi, atau lainnya.
+
+Setiap bulan, sistem menghitung ringkasan keuangan pengguna, kemudian mengubahnya menjadi indikator kesehatan finansial. Indikator tersebut dinilai menggunakan skor ordinal 1 sampai 5, lalu dinormalisasi menjadi Financial Health Score 0 sampai 100. Hasil akhirnya digunakan untuk menentukan kategori kesehatan finansial, membuat insight, warning, dan rekomendasi.
+
+Dengan struktur ini, database tidak hanya berfungsi sebagai tempat penyimpanan transaksi, tetapi juga sebagai dasar sistem evaluasi kesehatan finansial dan analisis perilaku konsumtif.
+
+============================================================
+END OF DOCUMENT
+============================================================

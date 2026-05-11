@@ -1,10 +1,14 @@
-/* ============================
-   Login & Register Pages (shared)
-   ============================ */
+/* Login & Register Pages (shared) */
 
 .page {
   min-height: 100vh;
   background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,6 +26,20 @@
   max-width: 26rem;
 }
 
+/* Back to home */
+.backHome {
+  display: inline-block;
+  font-size: 0.8125rem;
+  color: #64748b;
+  text-decoration: none;
+  margin-bottom: 1.25rem;
+  transition: color 150ms;
+}
+
+.backHome:hover {
+  color: #0ea5e9;
+}
+
 /* Logo */
 .logoRow {
   display: flex;
@@ -29,6 +47,9 @@
   gap: 0.75rem;
   justify-content: center;
   margin-bottom: 2rem;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .logo {

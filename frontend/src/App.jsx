@@ -13,14 +13,14 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/"         element={<Landing />} />
+        <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/transaksi" element={<ProtectedRoute><Transaksi /></ProtectedRoute>} />
-        <Route path="/laporan" element={<ProtectedRoute><Laporan /></ProtectedRoute>} />
-        <Route path="/insight" element={<ProtectedRoute><Insight /></ProtectedRoute>} />
+        <Route path="/laporan"   element={<ProtectedRoute><Laporan /></ProtectedRoute>} />
+        <Route path="/insight"   element={<ProtectedRoute><Insight /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
