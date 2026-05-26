@@ -13,6 +13,40 @@ export const checkSurvey = async (req, res) => {
   }
 };
 
+export const getSurvey = async (req, res) => {
+  try {
+    const { user_id, year, month } = req.params;
+    const [rows] = await db.execute(
+      "SELECT financial_satisfaction, financial_security, financial_confidence, note, period_year, period_month FROM subjective_surveys WHERE user_id = ? AND period_year = ? AND period_month = ?",
+      [user_id, year, month]
+    );
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.json(null);
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getLatestSurvey = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const [rows] = await db.execute(
+      "SELECT financial_satisfaction, financial_security, financial_confidence, note, period_year, period_month FROM subjective_surveys WHERE user_id = ? ORDER BY period_year DESC, period_month DESC LIMIT 1",
+      [user_id]
+    );
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.json(null);
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const submitSurvey = async (req, res) => {
   try {
     const {

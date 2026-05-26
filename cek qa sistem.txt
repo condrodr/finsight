@@ -301,43 +301,59 @@ Hasil yang BENAR:
 
 ----------------------------------------------------------------------
 
-4.2 VERIFIKASI PERHITUNGAN SKOR KESEHATAN
-------------------------------------------
-Skor dihitung dari 3 dimensi (total maks 100):
+4.2 VERIFIKASI PERHITUNGAN SKOR KESEHATAN (OBS FRAMEWORK)
+-----------------------------------------------------------
+Skor dihitung menggunakan COMPOSITE INDEX dengan EQUAL WEIGHTING sesuai
+perhitungan.txt (OECD Composite Indicator Framework).
 
-  DIMENSI 1 — Saving Score (maks 40 poin)
-  Formula: Saving Ratio = (Pendapatan - Pengeluaran) / Pendapatan
+Setiap indikator diberi skor ordinal 1–5:
+  5 = Sangat Baik, 4 = Baik, 3 = Cukup, 2 = Buruk, 1 = Sangat Buruk
 
-  Aturan:
-    Saving Ratio >= 30%  → 40 poin
-    Saving Ratio >= 20%  → 30 poin
-    Saving Ratio >= 10%  → 20 poin
-    Saving Ratio >= 0%   → 10 poin
-    Saving Ratio < 0%    → 0 poin
+DIMENSI OBJEKTIF (O) — 4 indikator:
 
-  DIMENSI 2 — Cash Flow Score (maks 30 poin)
-  Formula: Cash Flow = Pendapatan - Pengeluaran
+  O1: Saving Ratio = (Pendapatan - Pengeluaran) / Pendapatan
+    >= 30%  → 5    >= 20%  → 4    >= 10%  → 3    >= 0%   → 2    < 0%   → 1
 
-  Aturan:
-    Cash Flow > 0  → 30 poin
-    Cash Flow = 0  → 10 poin
-    Cash Flow < 0  → 0 poin
+  O2: Expense Ratio = Pengeluaran / Pendapatan
+    < 50%   → 5    < 70%   → 4    < 90%   → 3    < 100%  → 2    >= 100% → 1
 
-  DIMENSI 3 — Consumptive Score (maks 30 poin)
-  Formula: Consumptive Ratio = Total Konsumtif / Total Pengeluaran
+  O3: Cash Flow (balance / pendapatan)
+    >= 30%  → 5    >= 10%  → 4    > 0%    → 3    > -10%  → 2    <= -10% → 1
 
-  Aturan:
-    Consumptive Ratio < 30%  → 30 poin
-    Consumptive Ratio < 50%  → 20 poin
-    Consumptive Ratio < 70%  → 10 poin
-    Consumptive Ratio >= 70% → 0 poin
+  O4: Debt Ratio = Total Cicilan / Pendapatan
+    < 10%   → 5    < 20%   → 4    < 30%   → 3    < 40%   → 2    >= 40%  → 1
+    (Cicilan dideteksi dari keyword: cicilan, kpr, angsuran, pinjaman, hutang, kredit)
 
-  TOTAL SKOR = Saving Score + Cash Flow Score + Consumptive Score
+DIMENSI PERILAKU (B) — 4 indikator:
+
+  B1: Consumptive Ratio = Total Konsumtif / Total Pengeluaran
+    < 20%   → 5    < 35%   → 4    < 50%   → 3    < 70%   → 2    >= 70%  → 1
+
+  B2: Transaction Frequency (jumlah transaksi pengeluaran)
+    <= 10   → 5    <= 20   → 4    <= 35   → 3    <= 50   → 2    > 50    → 1
+
+  B3: Impulsive Spending (% transaksi kecil < 2% pendapatan)
+    < 20%   → 5    < 40%   → 4    < 55%   → 3    < 70%   → 2    >= 70%  → 1
+
+  B4: Budget Discipline (expense / income)
+    <= 60%  → 5    <= 75%  → 4    <= 90%  → 3    <= 100% → 2    > 100%  → 1
+
+DIMENSI SUBJEKTIF (S) — 3 indikator (dari survey Likert 1–5):
+  S1: Kepuasan Finansial   (financial_satisfaction)
+  S2: Rasa Aman Finansial  (financial_security)
+  S3: Kepercayaan Diri     (financial_confidence)
+  Catatan: S hanya dihitung jika survey sudah diisi di dashboard.
+
+FORMULA FINAL (Equal Weighting):
+  Jika survey ada (11 indikator):
+    FHS = (jumlah semua skor / 55) × 100
+  Jika survey belum ada (8 indikator):
+    FHS = (jumlah O+B / 40) × 100
 
 Cara verifikasi manual:
-  1. Catat total pendapatan, pengeluaran, dan kategori konsumtif dari dashboard
-  2. Hitung manual di kalkulator
-  3. Bandingkan dengan skor yang tampil di dashboard
+  1. Hitung masing-masing indikator menggunakan data transaksi
+  2. Jumlahkan semua skor ordinal
+  3. Hitung FHS sesuai formula di atas
   [ ] Hasil perhitungan manual cocok dengan skor di dashboard
 
 ----------------------------------------------------------------------
@@ -934,28 +950,32 @@ FITUR YANG SUDAH BERJALAN (IMPLEMENTED & WORKING):
   [OK] Login dan logout dengan JWT
   [OK] Proteksi halaman dengan token
   [OK] Tambah transaksi income dan expense
-  [OK] List transaksi per user
+  [OK] Edit dan hapus transaksi (dengan konfirmasi SweetAlert2)
+  [OK] List transaksi per user (dengan filter bulan/tahun/tipe/kategori + sort)
   [OK] Dropdown kategori dan subkategori dinamis
-  [OK] Kalkulasi skor kesehatan finansial (3 dimensi)
-  [OK] Generate insight dan warning otomatis
+  [OK] Kalkulasi skor kesehatan finansial FULL OBS (11 indikator: O×4 + B×4 + S×3)
+  [OK] Generate insight dan warning otomatis (semua 8 dimensi O+B)
   [OK] Klasifikasi kategori via keyword matching
   [OK] Konfirmasi logout dengan SweetAlert2
   [OK] Sidebar collapse/expand
+  [OK] Halaman /laporan (chart tren 6 bulan + pie pengeluaran + tabel rincian)
+  [OK] Halaman /insight (breakdown OBS + analisis pengeluaran + warning/insight)
+  [OK] Survey Subjektif (S) — API + UI modal di Dashboard (muncul hari 1–7)
+  [OK] Skor S ikut masuk FHS bila survey sudah diisi
+  [OK] Validasi amount di backend (angka positif wajib)
+  [OK] IDOR fix — semua endpoint validasi JWT user_id
 
-FITUR YANG BELUM DIIMPLEMENTASIKAN (GAPS):
-  [--] Survey subjektif (monthly self-assessment)
-  [--] Simpan hasil scoring ke database (financial_health_results)
-  [--] Laporan tren bulanan (/laporan)
-  [--] Halaman insight detail (/insight)
-  [--] Edit dan hapus transaksi
-  [--] Pagination transaksi
-  [--] Penyimpanan id_kategori/id_subkategori di transaksi
+FITUR YANG MASIH DALAM GAP:
+  [--] Simpan hasil scoring ke database (financial_health_results) — dihitung on-demand
+  [--] Tren skor bulanan historis (data scoring tidak persisten)
+  [--] Pagination transaksi (semua transaksi dimuat sekaligus)
+  [--] Penyimpanan id_kategori/id_subkategori di transaksi (tersimpan sebagai teks)
 
-CELAH KEAMANAN YANG PERLU DIPERBAIKI:
-  [!] IDOR — user_id diambil dari URL, bukan dari JWT
-  [!] Tidak ada validasi amount di backend
-  [!] CORS terbuka semua origin
-  [!] JWT Secret lemah
+CELAH KEAMANAN YANG TERSISA:
+  [!] CORS terbuka semua origin (perlu dibatasi di production)
+  [!] JWT Secret di .env masih lemah (ganti dengan string random ≥32 karakter)
+  [~] IDOR SUDAH DIPERBAIKI — endpoint sekarang validasi dari JWT token
+  [~] Validasi amount SUDAH diperbaiki di backend
 
 
 ================================================================================

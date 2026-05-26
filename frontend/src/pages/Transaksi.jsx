@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   Plus, ArrowUpCircle, ArrowDownCircle, X,
-  ChevronUp, ChevronDown, ChevronsUpDown,
+  ChevronUp, ChevronDown, ChevronsUpDown, Pencil, Trash2, ClipboardList,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import Sidebar from "../components/Sidebar.jsx";
 import Footer from "../components/Footer.jsx";
 import API from "../services/api.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { getLatestSurvey, submitSurvey } from "../services/surveyService.js";
 import styles from "../styles/pages/Transaksi.module.css";
 
 const MONTHS = [
@@ -34,6 +36,7 @@ function Transaksi() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
@@ -51,6 +54,15 @@ function Transaksi() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [sortAmount, setSortAmount] = useState(null); // null | 'desc' | 'asc'
 
+  // ── Survey states ──────────────────────────────
+  const [latestSurvey, setLatestSurvey] = useState(null);
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
+  const [satisfaction, setSatisfaction] = useState(3);
+  const [security, setSecurity] = useState(3);
+  const [confidence, setConfidence] = useState(3);
+  const [surveyNote, setSurveyNote] = useState("");
+  const [submittingSurvey, setSubmittingSurvey] = useState(false);
+
   // ── Fetch ──────────────────────────────────────
   const fetchTransactions = () => {
     setLoading(true);
@@ -60,7 +72,21 @@ function Transaksi() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchTransactions(); }, []);
+  useEffect(() => {
+    fetchTransactions();
+    // Fetch latest survey
+    getLatestSurvey(user.id)
+      .then((res) => {
+        if (res.data) {
+          setLatestSurvey(res.data);
+          setSatisfaction(res.data.financial_satisfaction);
+          setSecurity(res.data.financial_security);
+          setConfidence(res.data.financial_confidence);
+          setSurveyNote(res.data.note || "");
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Derived data ───────────────────────────────
   const availableYears = useMemo(() => {
@@ -125,21 +151,63 @@ function Transaksi() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await API.post("/transactions/add", { ...form, user_id: user.id, amount: Number(form.amount) });
+      const payload = {
+        ...form,
+        user_id: user.id,
+        amount: Number(form.amount),
+        id_kategori: parseInt(kategoriId),
+        id_subkategori: form.subcategory ? parseInt(form.subcategory) : null,
+      };
+
+      if (editId) {
+        await API.put(`/transactions/${editId}`, payload);
+      } else {
+        await API.post("/transactions/add", payload);
+      }
       setForm(emptyForm);
       setKategoriId("");
       setSubkategoriList([]);
       setShowForm(false);
+      setEditId(null);
       fetchTransactions();
     } catch (err) {
-      console.error(err);
+      Swal.fire({ icon: "error", title: "Gagal menyimpan", text: err?.response?.data?.error || err.message, confirmButtonColor: "#0ea5e9" });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleEdit = (t) => {
+    setEditId(t.id);
+    setForm({ type: t.type, amount: String(t.amount), category: t.category, subcategory: t.subcategory || "", date: t.date?.split("T")[0] || t.date, note: t.description || "" });
+    setKategoriId(String(t.id_kategori || ""));
+    setSubkategoriList([]);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (t) => {
+    const result = await Swal.fire({
+      title: "Hapus Transaksi?",
+      html: `<span style="font-size:0.9rem;color:#475569">${t.type === "income" ? "Pemasukan" : "Pengeluaran"} · ${t.category} · ${new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(t.amount)}</span>`,
+      icon: "warning", iconColor: "#f59e0b",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus", cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444", cancelButtonColor: "#94a3b8",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await API.delete(`/transactions/${t.id}`);
+      fetchTransactions();
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "Gagal menghapus", text: err?.response?.data?.error || err.message });
+    }
+  };
+
   const closeForm = () => {
     setShowForm(false);
+    setEditId(null);
     setForm(emptyForm);
     setKategoriId("");
     setSubkategoriList([]);
@@ -154,6 +222,46 @@ function Transaksi() {
   const handleTypeFilter = (val) => {
     setFilterType(val);
     setFilterCategory("all");
+  };
+
+  const handleSurveySave = async () => {
+    setSubmittingSurvey(true);
+    try {
+      const today = new Date();
+      await submitSurvey({
+        user_id: user.id,
+        period_year: today.getFullYear(),
+        period_month: today.getMonth() + 1,
+        financial_satisfaction: satisfaction,
+        financial_security: security,
+        financial_confidence: confidence,
+        note: surveyNote,
+      });
+      setShowSurveyModal(false);
+      Swal.fire({
+        icon: "success",
+        title: "Evaluasi Tersimpan",
+        text: "Penilaian keuangan Anda berhasil diperbarui.",
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: "top-end",
+      });
+      // Refresh survey data
+      getLatestSurvey(user.id)
+        .then((res) => {
+          if (res.data) setLatestSurvey(res.data);
+        })
+        .catch(() => {});
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal menyimpan",
+        text: err?.response?.data?.error || err.message
+      });
+    } finally {
+      setSubmittingSurvey(false);
+    }
   };
 
   return (
@@ -175,11 +283,54 @@ function Transaksi() {
             </button>
           </div>
 
+          {/* Survey Summary */}
+          {latestSurvey && (
+            <div style={{
+              background: "#f0fdf4",
+              border: "1px solid #bbf7d0",
+              borderRadius: "8px",
+              padding: "16px",
+              marginBottom: "20px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
+                <ClipboardList size={20} color="#22c55e" />
+                <div>
+                  <p style={{ fontWeight: "600", marginBottom: "4px" }}>
+                    Evaluasi {latestSurvey.period_month}/{latestSurvey.period_year}
+                  </p>
+                  <p style={{ fontSize: "0.9rem", color: "#666" }}>
+                    Kepuasan: {latestSurvey.financial_satisfaction}/5 |
+                    Keamanan: {latestSurvey.financial_security}/5 |
+                    Percaya diri: {latestSurvey.financial_confidence}/5
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSurveyModal(true)}
+                style={{
+                  background: "#0ea5e9",
+                  color: "white",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "0.9rem"
+                }}
+              >
+                <Pencil size={16} style={{ marginRight: "6px" }} />
+                Ubah
+              </button>
+            </div>
+          )}
+
           {/* Form Panel */}
           {showForm && (
             <div className={styles.formPanel}>
               <div className={styles.formHeader}>
-                <h2 className={styles.formTitle}>Transaksi Baru</h2>
+                <h2 className={styles.formTitle}>{editId ? "Edit Transaksi" : "Transaksi Baru"}</h2>
                 <button onClick={closeForm} className={styles.closeBtn}><X size={20} /></button>
               </div>
               <form onSubmit={handleSubmit} className={styles.formGrid}>
@@ -237,7 +388,7 @@ function Transaksi() {
                 <div className={styles.formActions}>
                   <button type="button" onClick={closeForm} className={styles.cancelBtn}>Batal</button>
                   <button type="submit" disabled={submitting} className={styles.saveBtn}>
-                    {submitting ? "Menyimpan..." : "Simpan"}
+                    {submitting ? "Menyimpan..." : editId ? "Perbarui" : "Simpan"}
                   </button>
                 </div>
               </form>
@@ -315,10 +466,9 @@ function Transaksi() {
                     <th className={styles.th}>Kategori</th>
                     <th className={styles.th}>Catatan</th>
                     <th className={styles.thSortable} onClick={cycleSortAmount}>
-                      <span className={styles.sortBadge}>
-                        Jumlah <SortIcon size={13} />
-                      </span>
+                      <span className={styles.sortBadge}>Jumlah <SortIcon size={13} /></span>
                     </th>
+                    <th className={styles.th}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -332,15 +482,17 @@ function Transaksi() {
                             : <ArrowDownCircle size={16} className={styles.iconExpense} />}
                           <div>
                             <span className={styles.categoryName}>{t.category}</span>
-                            {t.subcategory && (
-                              <span className={styles.subcategoryName}>{t.subcategory}</span>
-                            )}
+                            {t.subcategory && <span className={styles.subcategoryName}>{t.subcategory}</span>}
                           </div>
                         </div>
                       </td>
                       <td className={styles.tdNote}>{t.description || "—"}</td>
                       <td className={`${styles.tdAmount} ${t.type === "income" ? styles.amountIncome : styles.amountExpense}`}>
                         {t.type === "income" ? "+" : "−"}{formatRupiah(t.amount)}
+                      </td>
+                      <td className={styles.tdActions}>
+                        <button className={styles.editBtn} onClick={() => handleEdit(t)} title="Edit"><Pencil size={14} /></button>
+                        <button className={styles.deleteBtn} onClick={() => handleDelete(t)} title="Hapus"><Trash2 size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -351,6 +503,183 @@ function Transaksi() {
         </main>
       </div>
       <Footer />
+
+      {/* Survey Edit Modal */}
+      {showSurveyModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }} onClick={(e) => {
+          if (e.target === e.currentTarget) setShowSurveyModal(false);
+        }}>
+          <div style={{
+            background: "white",
+            borderRadius: "12px",
+            padding: "24px",
+            maxWidth: "500px",
+            width: "90%",
+            maxHeight: "90vh",
+            overflowY: "auto"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ margin: 0, fontSize: "1.3rem" }}>Edit Evaluasi Keuangan</h2>
+              <button onClick={() => setShowSurveyModal(false)} style={{
+                background: "none",
+                border: "none",
+                fontSize: "1.5rem",
+                cursor: "pointer"
+              }}>
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}>
+                1. Seberapa puas Anda dengan kondisi keuangan?
+              </label>
+              <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.9rem", color: "#666" }}>Sangat Buruk</span>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setSatisfaction(n)}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      border: satisfaction === n ? "2px solid #0ea5e9" : "1px solid #ccc",
+                      borderRadius: "6px",
+                      background: satisfaction === n ? "#0ea5e9" : "white",
+                      color: satisfaction === n ? "white" : "black",
+                      cursor: "pointer",
+                      fontWeight: "600"
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <span style={{ fontSize: "0.9rem", color: "#666" }}>Sangat Baik</span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}>
+                2. Seberapa aman Anda merasa secara finansial?
+              </label>
+              <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.9rem", color: "#666" }}>Sangat Buruk</span>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setSecurity(n)}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      border: security === n ? "2px solid #0ea5e9" : "1px solid #ccc",
+                      borderRadius: "6px",
+                      background: security === n ? "#0ea5e9" : "white",
+                      color: security === n ? "white" : "black",
+                      cursor: "pointer",
+                      fontWeight: "600"
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <span style={{ fontSize: "0.9rem", color: "#666" }}>Sangat Baik</span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}>
+                3. Seberapa percaya diri Anda dalam mengelola keuangan?
+              </label>
+              <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.9rem", color: "#666" }}>Sangat Buruk</span>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setConfidence(n)}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      border: confidence === n ? "2px solid #0ea5e9" : "1px solid #ccc",
+                      borderRadius: "6px",
+                      background: confidence === n ? "#0ea5e9" : "white",
+                      color: confidence === n ? "white" : "black",
+                      cursor: "pointer",
+                      fontWeight: "600"
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <span style={{ fontSize: "0.9rem", color: "#666" }}>Sangat Baik</span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}>
+                Catatan (opsional)
+              </label>
+              <textarea
+                value={surveyNote}
+                onChange={(e) => setSurveyNote(e.target.value)}
+                style={{
+                  width: "100%",
+                  minHeight: "80px",
+                  padding: "8px",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                  fontFamily: "inherit",
+                  fontSize: "0.95rem",
+                  boxSizing: "border-box"
+                }}
+                placeholder="Tuliskan catatan atau konteks tambahan..."
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowSurveyModal(false)}
+                style={{
+                  background: "#f1f5f9",
+                  border: "none",
+                  padding: "10px 20px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: "600"
+                }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSurveySave}
+                disabled={submittingSurvey}
+                style={{
+                  background: "#0ea5e9",
+                  color: "white",
+                  border: "none",
+                  padding: "10px 20px",
+                  borderRadius: "6px",
+                  cursor: submittingSurvey ? "not-allowed" : "pointer",
+                  fontWeight: "600",
+                  opacity: submittingSurvey ? 0.6 : 1
+                }}
+              >
+                {submittingSurvey ? "Menyimpan..." : "Simpan Evaluasi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

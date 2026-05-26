@@ -132,19 +132,69 @@
   border: 1px solid;
 }
 
-/* Dimension bars */
+/* Dimension breakdown */
 .scoreDims {
   flex: 1;
-  min-width: 260px;
+  min-width: 280px;
+}
+
+.obsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .obsGrid { grid-template-columns: repeat(3, 1fr); }
 }
 
 .dimsTitle {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 1rem;
+  letter-spacing: 0.07em;
+  margin: 0 0 0.875rem;
+}
+
+.noDataText {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.surveyMissing {
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.surveyMissingIcon { color: #f59e0b; margin: 0 auto 0.5rem; display: block; }
+
+.surveyMissingText {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 0.375rem;
+}
+
+.surveyMissingHint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.noSurveyTag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: #f1f5f9;
+  border-radius: 9999px;
+  padding: 0.2rem 0.625rem;
+  margin-top: 0.25rem;
 }
 
 .dimBar { margin-bottom: 1rem; }
@@ -354,3 +404,177 @@
 .emptyIcon  { color: #f59e0b; margin: 0 auto 0.875rem; display: block; }
 .emptyTitle { font-size: 1rem; font-weight: 600; color: #334155; margin: 0; }
 .emptyDesc  { font-size: 0.875rem; color: #94a3b8; margin: 0.5rem 0 0; }
+
+/* Modal Overlay & Card */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalCard {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 16px;
+}
+
+.modalTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.modalTitleIcon { color: #0ea5e9; flex-shrink: 0; }
+
+.modalTitle {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.modalCloseBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0;
+  margin-left: 8px;
+}
+
+.modalCloseBtn:hover { color: #1e293b; }
+
+.modalSubtitle {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.questionBlock {
+  margin-bottom: 24px;
+}
+
+.questionLabel {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 12px;
+}
+
+.optionalTag {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.noteField {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.noteField:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.modalFooter {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.modalCancelBtn {
+  padding: 10px 16px;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modalCancelBtn:hover { background: #e2e8f0; }
+
+.modalSubmitBtn {
+  padding: 10px 16px;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modalSubmitBtn:hover:not(:disabled) { background: #0284c7; }
+.modalSubmitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Likert Scale */
+.likertRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.likertEnd {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+  flex-basis: 70px;
+}
+
+.likertBtn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #475569;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.likertBtn:hover { border-color: #cbd5e1; background: #f8fafc; }
+
+.likertBtnActive {
+  background: #0ea5e9 !important;
+  color: white !important;
+  border-color: #0284c7 !important;
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { CalendarDays, TrendingUp, TrendingDown, Wallet, Percent } from "lucide-react";
+import { CalendarDays, TrendingUp, TrendingDown, Wallet, Percent, X } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
@@ -58,6 +58,10 @@ function Laporan() {
   const now = new Date();
   const [selMonth, setSelMonth] = useState(now.getMonth() + 1);
   const [selYear,  setSelYear]  = useState(now.getFullYear());
+
+  // ── Detail modal states ────────────────────────
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     API.get(`/transactions/${user.id}`)
@@ -252,7 +256,19 @@ function Laporan() {
                 </thead>
                 <tbody>
                   {pieData.map((c, i) => (
-                    <tr key={i}>
+                    <tr
+                      key={i}
+                      onClick={() => {
+                        setSelectedCategory(c.name);
+                        setShowDetailModal(true);
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) => e.target.parentNode.style.background = "#f8fafc"}
+                      onMouseLeave={(e) => e.target.parentNode.style.background = "transparent"}
+                    >
                       <td>
                         <span className={styles.catDot} style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
                         {c.name}
@@ -270,6 +286,107 @@ function Laporan() {
         </main>
       </div>
       <Footer />
+
+      {/* Detail Transaksi Modal */}
+      {showDetailModal && selectedCategory && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }} onClick={() => setShowDetailModal(false)}>
+          <div style={{
+            background: "white",
+            borderRadius: "12px",
+            padding: "24px",
+            maxWidth: "600px",
+            width: "90%",
+            maxHeight: "80vh",
+            overflowY: "auto",
+            boxShadow: "0 20px 25px rgba(0,0,0,0.15)"
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div>
+                <h2 style={{ margin: "0 0 4px 0", fontSize: "1.3rem" }}>{selectedCategory}</h2>
+                <p style={{ margin: 0, fontSize: "0.9rem", color: "#666" }}>
+                  {MONTHS_FULL[selMonth - 1]} {selYear}
+                </p>
+              </div>
+              <button onClick={() => setShowDetailModal(false)} style={{
+                background: "none",
+                border: "none",
+                fontSize: "1.5rem",
+                cursor: "pointer"
+              }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Detail Transaksi List */}
+            {selData.txs.filter((t) => t.type === "expense" && t.category === selectedCategory).length > 0 ? (
+              <div>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                      <th style={{ textAlign: "left", padding: "8px 0", fontWeight: "600", fontSize: "0.9rem" }}>Tanggal</th>
+                      <th style={{ textAlign: "left", padding: "8px 0", fontWeight: "600", fontSize: "0.9rem" }}>Keterangan</th>
+                      <th style={{ textAlign: "right", padding: "8px 0", fontWeight: "600", fontSize: "0.9rem" }}>Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selData.txs
+                      .filter((t) => t.type === "expense" && t.category === selectedCategory)
+                      .map((tx) => (
+                        <tr key={tx.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "12px 0", fontSize: "0.9rem" }}>
+                            {new Date(tx.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+                          </td>
+                          <td style={{ padding: "12px 0", fontSize: "0.9rem" }}>
+                            {tx.description || "-"}
+                          </td>
+                          <td style={{ textAlign: "right", padding: "12px 0", fontSize: "0.9rem", fontWeight: "600" }}>
+                            {formatRupiah(tx.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+
+                {/* Total Summary */}
+                <div style={{
+                  background: "#f0f9ff",
+                  border: "1px solid #bae6fd",
+                  borderRadius: "8px",
+                  padding: "12px 16px",
+                  marginTop: "16px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <span style={{ fontWeight: "600", color: "#0369a1" }}>Total</span>
+                  <span style={{ fontSize: "1.1rem", fontWeight: "700", color: "#0369a1" }}>
+                    {formatRupiah(
+                      selData.txs
+                        .filter((t) => t.type === "expense" && t.category === selectedCategory)
+                        .reduce((sum, tx) => sum + Number(tx.amount), 0)
+                    )}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p style={{ textAlign: "center", color: "#666", padding: "20px" }}>
+                Tidak ada transaksi untuk kategori ini
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
