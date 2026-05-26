@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { getDashboard } from "../services/financeService.js";
-import { submitSurvey } from "../services/surveyService.js";
+import { submitSurvey, getSurvey } from "../services/surveyService.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import API from "../services/api.js";
 import Sidebar from "../components/Sidebar.jsx";
@@ -159,8 +159,7 @@ function Insight() {
     // Fetch existing survey jika ada
     if (surveyExistsForMonth) {
       try {
-        const { default: surveyService } = await import("../services/surveyService.js");
-        const surveyRes = await surveyService.getSurvey(user.id, filterYear, filterMonth);
+        const surveyRes = await getSurvey(user.id, filterYear, filterMonth);
         if (surveyRes && surveyRes.data) {
           setSatisfaction(surveyRes.data.financial_satisfaction || 3);
           setSecurity(surveyRes.data.financial_security || 3);
