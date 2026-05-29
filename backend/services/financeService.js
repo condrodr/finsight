@@ -8,7 +8,6 @@ const DEBT_KEYWORDS = ["cicilan", "kpr", "angsuran", "pinjaman", "hutang", "kred
 const isDebtCategory = (cat) => DEBT_KEYWORDS.some((kw) => (cat || "").toLowerCase().includes(kw));
 
 // ── ORDINAL SCORING FUNCTIONS (returns 1–5) ──────────────────────
-
 // O1: Saving Ratio = balance / income  (higher is better)
 const scoreO1 = (r) => {
   if (r >= 0.30) return 5;
@@ -17,7 +16,6 @@ const scoreO1 = (r) => {
   if (r >= 0.00) return 2;
   return 1;
 };
-
 // O2: Expense Ratio = expense / income  (lower is better)
 const scoreO2 = (r) => {
   if (r < 0.50) return 5;
@@ -26,7 +24,6 @@ const scoreO2 = (r) => {
   if (r < 1.00) return 2;
   return 1;
 };
-
 // O3: Cash Flow direction + magnitude relative to income
 const scoreO3 = (balance, income) => {
   if (income === 0) return balance >= 0 ? 2 : 1;
@@ -37,7 +34,6 @@ const scoreO3 = (balance, income) => {
   if (r > -0.10) return 2;
   return 1;
 };
-
 // O4: Debt Ratio = debt_payments / income  (lower is better)
 const scoreO4 = (r) => {
   if (r < 0.10) return 5;

@@ -11,7 +11,11 @@ export const createTransaction = async (data) => {
 
 export const getTransactions = async (user_id) => {
   const [rows] = await db.execute(
-    "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC",
+    `SELECT t.*, k.kelompok_analisis
+     FROM transactions t
+     LEFT JOIN kategori k ON t.id_kategori = k.id_kategori
+     WHERE t.user_id = ?
+     ORDER BY t.date DESC`,
     [user_id]
   );
   return rows;
