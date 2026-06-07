@@ -433,7 +433,6 @@ const hitungSkorOBS = ({
  };
 };
 
-
 // ── INSIGHT & WARNING ENGINE ─────────────────────────────────────
 const generateInsightWarning = ({
  income, expense, balance,
@@ -542,8 +541,6 @@ const generateInsightWarning = ({
 
  return { insight, warning };
 };
-
-
 
 
 const makeInsightRecords = (insight) => {

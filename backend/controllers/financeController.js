@@ -96,8 +96,7 @@ export const getDashboard = async (req, res) => {
    const summary = calculateSummary(transactions, survey);
 
 
-   // Persist hanya untuk analisis bulanan, karena tabel financial_health_results
-   // memakai unique key user_id + period_year + period_month.
+   // hanya untuk analisis bulanan, karena tabel financial_health_results memakai unique key user_id + period_year + period_month.
    if (year && month) {
      const healthResultId = await saveFinancialHealthAnalysis({
        userId: parseInt(user_id),
