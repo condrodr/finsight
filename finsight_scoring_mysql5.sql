@@ -176,7 +176,9 @@ CREATE TABLE `transactions` (
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `transactions_subkategori_fk`
     FOREIGN KEY (`id_subkategori`) REFERENCES `subkategori` (`id_subkategori`)
-    ON DELETE SET NULL ON UPDATE CASCADE ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `chk_transactions_amount_positive` CHECK (`amount` > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- DATA TRANSAKSI — SKENARIO QA
@@ -345,7 +347,11 @@ CREATE TABLE `subjective_surveys` (
   UNIQUE KEY `uq_subjective_user_period` (`user_id`, `period_year`, `period_month`),
   CONSTRAINT `subjective_surveys_user_fk`
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `chk_subjective_month` CHECK (`period_month` BETWEEN 1 AND 12),
+  CONSTRAINT `chk_financial_satisfaction` CHECK (`financial_satisfaction` BETWEEN 1 AND 5),
+  CONSTRAINT `chk_financial_security` CHECK (`financial_security` BETWEEN 1 AND 5),
+  CONSTRAINT `chk_financial_confidence` CHECK (`financial_confidence` BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Contoh data survey: skala 1 (sangat buruk) - 5 (sangat baik)
@@ -399,7 +405,19 @@ CREATE TABLE `financial_health_results` (
   KEY `idx_fhr_category` (`health_category`),
   CONSTRAINT `fhr_user_fk`
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-    ON DELETE CASCADE ON UPDATE CASCADE
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `chk_fhr_month` CHECK (`period_month` BETWEEN 1 AND 12),
+  CONSTRAINT `chk_fhr_score_range` CHECK (`financial_health_score` BETWEEN 0 AND 100),
+  CONSTRAINT `chk_fhr_ordinal_scores` CHECK (
+    `saving_score` BETWEEN 1 AND 5 AND
+    `expense_score` BETWEEN 1 AND 5 AND
+    `cash_flow_score` BETWEEN 1 AND 5 AND
+    `debt_score` BETWEEN 1 AND 5 AND
+    `consumptive_score` BETWEEN 1 AND 5 AND
+    `frequency_score` BETWEEN 1 AND 5 AND
+    `budget_discipline_score` BETWEEN 1 AND 5 AND
+    (`subjective_score` IS NULL OR `subjective_score` BETWEEN 1 AND 5)
+  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
