@@ -255,37 +255,42 @@ const timList = [
   {
     nama: "Dewi Condro Resmi",
     nim: "052127231",
-    peran: "Ketua Projek",
+    peran: "Ketua Tim & Fullstack Developer",
     avatar: "DCR",
     warna: "#0ea5e9",
+    deskripsi:"System Development & Deployment"
   },
   {
     nama: "Rizal Putra Ilham",
     nim: "049813907",
-    peran: "Anggota Projek",
+    peran: "System Analyst",
     avatar: "RPI",
     warna: "#10b981",
+    deskripsi:"Requirement Analysis & Planning"
   },
   {
     nama: "Sabina Insyirah Ifen",
     nim: "048406899",
-    peran: "Anggota Projek",
+    peran: "Documentation Specialist",
     avatar: "SII",
     warna: "#8b5cf6",
+    deskripsi:"Project Documentation"
   },
   {
       nama: "Muhamad Anggoro Muryansyah",
     nim: "048647641",
-    peran: "Anggota Projek",
+    peran: "Quality Assurance Tester",
     avatar: "MAM",
     warna: "#f59e0b",
+    deskripsi:"Blackbox Testing + UAT"
   },
   {
     nama: "Angga Saputra",
     nim: "049690599",
-    peran: "Anggota Projek",
+    peran: "UI/UX Designer",
     avatar: "AS",
     warna: "#ef4444",
+    deskripsi:"Interface & User Experience Design"
   },
 ];
 
@@ -344,7 +349,7 @@ function Landing() {
           </p>
           <div className={styles.heroCta}>
             <a href="#edukasi" className={styles.ctaPrimary}>Edukasi</a>
-            <a href="#fitur" className={styles.ctaSecondary}>Lihat Fitur</a>
+            <a href="#tentang" className={styles.ctaSecondary}>Lihat Tim</a>
             <a href="https://bit.ly/4dS69t7" target="_blank" rel="noopener noreferrer" className={styles.ctaKuesioner}>
               Isi Kuesioner
             </a>

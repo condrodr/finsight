@@ -71,8 +71,8 @@
 }
 
 .ctaSecondary {
-  border: 1px solid #cbd5e1;
-  color: #334155;
+  border: 1px solid #7e9bbe;
+  color: #29384e;
   padding: 0.75rem 1.5rem;
   border-radius: 0.75rem;
   font-weight: 600;
@@ -81,7 +81,7 @@
 }
 
 .ctaSecondary:hover {
-  background-color: #f1f5f9;
+  background-color: #f6f9f1;
 }
 
 .ctaKuesioner {
