@@ -349,7 +349,7 @@ function Landing() {
           </p>
           <div className={styles.heroCta}>
             <a href="#edukasi" className={styles.ctaPrimary}>Edukasi</a>
-            <a href="#tentang" className={styles.ctaSecondary}>Lihat Tim</a>
+            <a href="#tentang" className={styles.ctaSecondary}>Lihat Kontribusi Tim</a>
             <a href="https://bit.ly/4dS69t7" target="_blank" rel="noopener noreferrer" className={styles.ctaKuesioner}>
               Isi Kuesioner
             </a>
