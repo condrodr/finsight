@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Footer from "../components/Footer.jsx";
 import {
   BookOpen, X, PiggyBank, CreditCard, BarChart2, ShieldCheck,
-  Lightbulb, Target, Clock, Users, TrendingUp
+  Lightbulb, Target, Clock, Users, TrendingUp, Play
 } from "lucide-react";
 import Navbar from "../components/Navbar.jsx";
 import styles from "../styles/pages/Landing.module.css";
@@ -350,9 +350,15 @@ function Landing() {
           <div className={styles.heroCta}>
             <a href="#edukasi" className={styles.ctaPrimary}>Edukasi</a>
             <a href="#tentang" className={styles.ctaSecondary}>Lihat Kontribusi Tim</a>
-            <a href="https://bit.ly/4dS69t7" target="_blank" rel="noopener noreferrer" className={styles.ctaKuesioner}>
-              Isi Kuesioner
-            </a>
+            <div className={styles.feedbackCta}>
+              <a href="https://bit.ly/4dS69t7" target="_blank" rel="noopener noreferrer" className={styles.ctaKuesioner}>
+                Isi Kuesioner Penilaian Aplikasi
+              </a>
+              <a href="https://youtu.be/u7wKbb0xAPI?si=EBmzDrKG2ZGfjWCt" target="_blank" rel="noopener noreferrer" className={styles.ctaVideo}>
+                <Play size={18} aria-hidden="true" />
+                Video Tutorial / Demo
+              </a>
+            </div>
           </div>
         </div>
 
